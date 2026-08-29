@@ -376,14 +376,18 @@ function Voer-Installatie-Uit {
     try {
         Stap 5 'Map klaarzetten...'
         if (-not (Test-Path $doel)) { New-Item -ItemType Directory -Path $doel -Force | Out-Null }
-        foreach ($sub in 'python', 'dvp') {
-            $pad = Join-Path $doel $sub
-            if (Test-Path $pad) { Remove-Item $pad -Recurse -Force }
-        }
-        foreach ($f in 'logo.ico', 'uninstall.ps1', 'versie.txt') {
-            $pad = Join-Path $doel $f
-            if (Test-Path $pad) { Remove-Item $pad -Force }
-        }
+        # een draaiende versie eerst stoppen (anders zit python.exe vast)
+        try {
+            (New-Object System.Net.WebClient).UploadString("http://127.0.0.1:$PORT/afsluiten", 'POST', '') | Out-Null
+        } catch { }
+        Get-CimInstance Win32_Process -Filter "Name = 'pythonw.exe' OR Name = 'python.exe'" |
+            Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($doel) } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        Start-Sleep -Milliseconds 600
+        # bij een herinstallatie: alles weg behalve je eigen gegevens
+        Get-ChildItem -LiteralPath $doel -Force |
+            Where-Object { $_.Name -notin @('data', 'afleveringen') } |
+            ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force }
 
         Stap 20 'Bestanden uitpakken (dit duurt even)...'
         Add-Type -AssemblyName System.IO.Compression.FileSystem
