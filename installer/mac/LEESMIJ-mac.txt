@@ -1,0 +1,51 @@
+De Vierkante Paal - voorbereidingstool (Mac)
+============================================
+
+INSTALLEREN
+-----------
+1. Pak "De Vierkante Paal (Mac).zip" uit (dubbelklik).
+2. Sleep "De Vierkante Paal.app" naar je map Programma's (of laat ze staan waar je wil).
+
+EERSTE KEER OPENEN
+------------------
+macOS blokkeert apps van buiten de App Store bij de eerste start.
+
+Probeer eerst dit:
+  - Rechtermuisklik (of Ctrl + klik) op "De Vierkante Paal.app" -> "Open" ->
+    in het venster nog eens "Open".
+
+Werkt dat niet (nieuwere macOS), dan:
+  - Dubbelklik de app (ze wordt geblokkeerd).
+  - Ga naar  Systeeminstellingen -> Privacy en beveiliging.
+  - Scroll naar onder; bij de melding over "De Vierkante Paal" klik je
+    "Toch openen" en bevestig je met je wachtwoord/Touch ID.
+  - Open de app daarna opnieuw.
+
+Krijg je een melding dat "python3" of de app "beschadigd" is, of blijft ze
+weigeren, open dan Terminal (Programma's -> Hulpprogramma's) en plak exact
+deze regel, gevolgd door Enter (pas het pad aan als de app ergens anders staat):
+
+  xattr -dr com.apple.quarantine "/Applications/De Vierkante Paal.app"
+
+Daarna opent de app normaal.
+
+GEBRUIK
+-------
+De app opent de tool in je browser op  http://localhost:8756
+Zolang de app in de Dock staat, draait de tool. Afsluiten:
+  - onderaan in de tool op "Tool afsluiten" klikken, of
+  - de app in de Dock stoppen (Cmd + Q), of
+  - gewoon het browsertabblad sluiten - de tool sluit dan vanzelf af na ca. 1,5 min.
+
+Je bewaarde afleveringen en gegevens staan in:
+  ~/Library/Application Support/De Vierkante Paal/
+
+VERWIJDEREN
+-----------
+Sleep "De Vierkante Paal.app" naar de prullenbak. Wil je ook je gegevens weg,
+verwijder dan de map  ~/Library/Application Support/De Vierkante Paal/
+
+VEREIST
+-------
+macOS 11 (Big Sur) of nieuwer. Werkt op Apple Silicon en Intel.
+Internet is nodig om de sportdata op te halen.

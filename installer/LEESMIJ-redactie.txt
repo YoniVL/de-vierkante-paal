@@ -1,0 +1,35 @@
+De Vierkante Paal - voorbereidingstool installeren
+=================================================
+
+1. Dubbelklik  "Installeer De Vierkante Paal.exe".
+
+2. Windows toont mogelijk een blauw scherm:
+   "Windows heeft je pc beschermd".
+   -> Klik op  "Meer informatie"  en dan  "Toch uitvoeren".
+   (Dit komt omdat het bestand niet officieel ondertekend is. Het is veilig -
+    het is gewoon een klein zelfgemaakt programma.)
+
+3. De installatiewizard opent:
+   - Stap 1 controleert of je pc alles heeft (Python zit in het pakket,
+     je hoeft zelf niets te installeren).
+   - Stap 2: kies waar de tool mag komen (standaard in je map Documenten)
+     en of je een snelkoppeling op het bureaublad wil.
+   - Stap 3 installeert alles en haalt meteen een eerste keer de data op.
+
+4. Klaar. Start de tool via de snelkoppeling  "De Vierkante Paal"  op je
+   bureaublad. Ze opent in je browser op  http://localhost:8756
+   Er verschijnt geen zwart venster; de tool draait onzichtbaar op de achtergrond.
+
+Bijwerken
+---------
+Krijg je later een nieuwe versie? Draai gewoon opnieuw het .exe-bestand en
+kies dezelfde map. Je bewaarde afleveringen en opgehaalde gegevens blijven staan.
+
+Verwijderen
+-----------
+Windows-toets -> "Apps" -> zoek "De Vierkante Paal" -> Verwijderen.
+Je mag daarbij kiezen of je je bewaarde afleveringen behoudt.
+
+Vereisten
+---------
+64-bit Windows 10 of 11. Internet is enkel nodig om de sportdata op te halen.

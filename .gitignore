@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# lokale data (per installatie / per gebruiker)
+data/
+afleveringen/
+merk.json
+
+# build-uitvoer van de installers
+installer/build/
+installer/build-mac/
+installer/cache/
+installer/uit/
+
+# OS
+.DS_Store
+Thumbs.db

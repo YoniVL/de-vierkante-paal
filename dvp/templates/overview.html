@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/static/logo.png">
+<title>De Vierkante Paal — voorbereiding</title>
+<style>
+  :root{
+    color-scheme:dark;
+    --rood:#ff4d67; --rood-diep:#ff2e4d; --inkt:#e7e9ee; --grijs:#8a93a3;
+    --lijn:#2a2f3a; --vlak:#171a21; --vlak-2:#1e222b; --bg:#0e1014;
+    --goed:#4ade80; --slecht:#f87171;
+    --goed-bg:rgba(74,222,128,.14); --slecht-bg:rgba(248,113,113,.14);
+    --teg:#5ea6ff; --teg-bg:rgba(94,166,255,.14);       /* accent voor de tegenstander */
+    --ant:var(--rood); --ant-bg:rgba(255,77,103,.13);   /* accent voor Antwerp */
+    --gras1:#2c6f38; --gras2:#22582c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 system-ui,"Segoe UI",Roboto,sans-serif;color:var(--inkt);background:var(--bg)}
+  a{color:var(--rood);text-decoration:none} a:hover{text-decoration:underline}
+
+  header{background:#0a0b0e;border-bottom:1px solid var(--lijn)}
+  header .inner{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  header .logo{width:34px;height:34px;border-radius:7px;display:block}
+  header h1{font-size:16px;margin:0;font-weight:700;color:var(--inkt)}
+  header .club{color:var(--rood);font-weight:700}
+  header .nu{color:var(--grijs);font-size:12.5px;margin-left:auto}
+
+  main{max-width:1080px;margin:0 auto;padding:20px}
+  section{background:var(--vlak);border:1px solid var(--lijn);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+  h2{font-size:13px;margin:0 0 14px;text-transform:uppercase;letter-spacing:.06em;color:var(--rood);
+     font-weight:700;display:flex;align-items:center;gap:8px}
+  h2::before{content:"";width:20px;height:3px;background:var(--rood);border-radius:2px}
+  h3{font-size:12px;margin:20px 0 8px;color:var(--grijs);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  h4{font-size:12px;margin:0 0 6px;color:var(--inkt);font-weight:700}
+  .muted{color:var(--grijs);font-size:13px}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--lijn)}
+  thead th, table > tr:first-child th{color:var(--grijs);font-weight:600;font-size:12px;
+       text-transform:uppercase;letter-spacing:.03em;border-bottom:2px solid var(--lijn)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.018)}
+  tbody tr:hover{background:var(--vlak-2)}
+  .tablescroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.sorteerbaar th{cursor:pointer;user-select:none;white-space:nowrap}
+  table.sorteerbaar th:hover{color:var(--inkt)}
+  table.sorteerbaar th::after{content:attr(data-arrow);margin-left:4px;color:var(--rood)}
+
+  .ant{color:var(--ant);font-weight:700} .teg{color:var(--teg);font-weight:700}
+  details.blok{border-top:1px solid var(--lijn);margin-top:10px;padding-top:6px}
+  details.blok > summary{cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+       color:var(--grijs);font-weight:700;list-style:none;padding:4px 0}
+  details.blok > summary::before{content:"▸ ";color:var(--rood)}
+  details.blok[open] > summary::before{content:"▾ "}
+
+  .btn{display:inline-block;background:var(--rood);color:#12151a;border:0;border-radius:8px;padding:9px 15px;
+       font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+  .btn:hover{background:var(--rood-diep);text-decoration:none}
+  .btn.grijs{background:var(--vlak-2);color:var(--inkt);border:1px solid var(--lijn)} .btn.grijs:hover{background:#272c36}
+  .btn.klein{padding:6px 11px;font-size:13px}
+  form.inline{display:inline}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .stempel{font-size:12px;color:var(--grijs);margin-top:10px}
+  .afsluit{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:8px}
+  .afsluit .btn-af{background:transparent;border:1px solid var(--slecht);color:var(--slecht);
+       border-radius:8px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer}
+  .afsluit .btn-af:hover{background:var(--slecht-bg)}
+  .afsluit label{font-size:12.5px;color:var(--grijs);display:flex;align-items:center;gap:6px;cursor:pointer}
+  .fout{background:var(--slecht-bg);border:1px solid rgba(248,113,113,.35);color:var(--inkt);padding:10px 13px;border-radius:8px;margin-bottom:10px;font-size:13.5px}
+  .fout summary{cursor:pointer;color:var(--grijs);font-size:12px;margin-top:4px}
+  .fout code{font-size:12px;color:var(--slecht);word-break:break-word}
+
+  .score-hero{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;
+              background:var(--vlak-2);border:1px solid var(--lijn);border-radius:12px;padding:16px 20px}
+  .score-hero .team{font-size:16px;font-weight:700;flex:1;text-align:right;min-width:120px}
+  .score-hero .team.uit{text-align:left}
+  .score-hero .cijfer{font-size:30px;font-weight:800;background:#0a0b0e;color:var(--inkt);border:1px solid var(--lijn);border-radius:9px;padding:5px 14px;white-space:nowrap}
+  .score-hero.geen .cijfer{color:var(--grijs);border-style:dashed;font-size:15px;font-weight:700}
+
+  /* veld */
+  .pitches{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  @media(max-width:780px){.pitches{grid-template-columns:1fr}}
+  .pitch-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;gap:8px}
+  .pitch-head b{font-size:14.5px} .pitch-head .fm{font-size:12px;color:var(--grijs);font-weight:700}
+  .pitch{background:repeating-linear-gradient(180deg,var(--gras1) 0 34px,var(--gras2) 34px 68px);
+         border:1px solid var(--lijn);border-radius:10px;padding:16px 6px;position:relative;overflow:hidden;min-height:440px;
+         display:grid;grid-template-rows:repeat(6,1fr)}
+  .pitch::before{content:"";position:absolute;inset:8px;border:2px solid rgba(255,255,255,.22);border-radius:6px}
+  .pitch::after{content:"";position:absolute;left:50%;top:50%;width:76px;height:76px;transform:translate(-50%,-50%);
+                border:2px solid rgba(255,255,255,.18);border-radius:50%}
+  .pitch-row{display:flex;justify-content:space-around;align-items:center;gap:2px;position:relative;z-index:1;min-height:0}
+  .pp{width:74px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+  .pp .num{width:34px;height:34px;border-radius:50%;background:#0e1014;color:var(--inkt);font-weight:800;font-size:14px;
+           display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18)}
+  .pp .nm{font-size:11px;color:#fff;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,.85);font-weight:600}
+  .pp .rt{font-size:10px;font-weight:800;border-radius:4px;padding:0 5px;line-height:1.4}
+  .pp .mk{font-size:10px}
+  .bench{margin-top:8px;font-size:12px;color:var(--grijs);display:flex;flex-wrap:wrap;gap:3px 12px}
+  .bench .b-in b{color:var(--inkt)}
+
+  /* wedstrijdverloop 2 kolommen */
+  .verloop-kop{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;font-weight:700;font-size:13px;
+               border-bottom:2px solid var(--lijn);padding-bottom:6px;margin-bottom:4px}
+  .verloop-kop .l{text-align:right} .verloop-kop .r{text-align:left}
+  .verloop{display:grid;grid-template-columns:1fr auto 1fr;gap:1px 10px;align-items:baseline;font-size:13.5px}
+  .verloop>div{padding:3px 0}
+  .verloop .l{text-align:right} .verloop .r{text-align:left}
+  .verloop .m{color:var(--grijs);font-size:12px;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap}
+  .verloop .mijn{font-weight:600;color:var(--inkt)}
+  .verloop .andere{color:var(--grijs)}
+  .verloop .st{color:var(--grijs);font-weight:400;font-size:12px}
+
+  .scorepil{display:inline-block;min-width:34px;text-align:center;border-radius:5px;padding:2px 5px;font-weight:700}
+  .s-hoog{background:var(--goed-bg);color:var(--goed)} .s-laag{background:var(--slecht-bg);color:var(--slecht)} .s-mid{background:var(--vlak-2);color:var(--grijs)}
+  .delta-pos{color:var(--goed);font-weight:600} .delta-neg{color:var(--slecht)}
+
+  .v-W,.v-D,.v-L{display:inline-flex;align-items:center;justify-content:center;
+       width:24px;height:24px;border-radius:6px;font-size:13px;font-weight:800;
+       margin-right:5px;vertical-align:middle;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .v-W{background:#2fbf5a;color:#05230f}
+  .v-D{background:#576070;color:#fff}
+  .v-L{background:#e2483f;color:#2a0705}
+  td .v-W,td .v-D,td .v-L{width:22px;height:22px;font-size:12px}
+
+  .drie{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:640px){.drie{grid-template-columns:1fr}}
+  .drie ol{margin:0;padding-left:18px;font-size:13.5px} .drie li{margin:2px 0}
+  .kaart{border:1px solid var(--lijn);border-radius:9px;padding:10px 12px;background:var(--vlak-2)}
+
+  input.rating{width:54px;padding:5px;border:1px solid var(--lijn);border-radius:6px;font-size:13px;text-align:right;
+               background:#0e1014;color:var(--inkt)}
+  input.rating:focus{outline:2px solid var(--rood);border-color:var(--rood)}
+  input[type=text]{background:#0e1014;color:var(--inkt)}
+  textarea{width:100%;min-height:220px;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--lijn);
+           border-radius:8px;padding:12px;background:#0b0d10;color:var(--inkt)}
+  details summary{cursor:pointer;font-weight:600}
+  .pos-ant{background:var(--ant-bg)} .pos-ant td{font-weight:700}
+  .pos-ant td:first-child{box-shadow:inset 3px 0 var(--ant)}
+  .pos-teg{background:var(--teg-bg)} .pos-teg td{font-weight:700}
+  .pos-teg td:first-child{box-shadow:inset 3px 0 var(--teg)}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+         border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;cursor:help}
+  .badge.schors{background:var(--slecht-bg);color:var(--slecht)}
+  .badge.bless{background:rgba(245,166,53,.16);color:#f0a838}
+  .uitval-lijn{border-radius:8px;padding:9px 12px;font-size:13.5px;margin:0 0 8px}
+  .uitval-lijn.schors{background:var(--slecht-bg);border:1px solid rgba(248,113,113,.32)}
+  .uitval-lijn.bless{background:rgba(245,166,53,.13);border:1px solid rgba(245,166,53,.3)}
+
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 16px}
+  .tabs button{background:var(--vlak);border:1px solid var(--lijn);color:var(--grijs);border-radius:8px;
+               padding:8px 13px;font-size:12.5px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.03em}
+  .tabs button.actief{background:var(--rood);color:#12151a;border-color:var(--rood)}
+  .tabs button:hover:not(.actief){color:var(--inkt);border-color:#3a4150}
+  .tab{display:none} .tab.actief{display:block}
+
+  table.teamstat td,table.teamstat th{border-bottom:1px solid var(--lijn)}
+  table.teamstat th:first-child{text-align:right} table.teamstat th:last-child{text-align:left}
+  table.teamstat td.mid{text-align:center;color:var(--grijs);font-size:12.5px;white-space:nowrap}
+  table.teamstat td:first-child{text-align:right;font-weight:600;width:34%}
+  table.teamstat td:last-child{font-weight:600;width:34%}
+  table.teamstat tr.grp td{background:var(--vlak-2);color:var(--rood);font-size:11px;text-transform:uppercase;
+                           letter-spacing:.05em;font-weight:700;text-align:center;padding:5px}
+  .reeks{list-style:none;padding:0;margin:0;font-size:13.5px}
+  .reeks li{padding:3px 0;border-bottom:1px dashed var(--lijn)}
+  .reeks b{color:var(--inkt)}
+  .ref-kaart{display:flex;flex-wrap:wrap;gap:6px 20px;background:var(--vlak-2);border:1px solid var(--lijn);
+             border-radius:9px;padding:10px 14px;font-size:14px}
+  .ref-kaart .g{color:var(--grijs)}
+  .conn{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.conn{grid-template-columns:1fr}}
+  li.is-ant{color:var(--rood);font-weight:700}
+
+  [hidden]{display:none!important}
+  .ververs-status{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13.5px;
+                  background:var(--vlak-2);border:1px solid var(--lijn);border-radius:8px;padding:9px 13px}
+  .ververs-status b.ok{color:var(--goed)} .ververs-status b.fout{color:var(--slecht)}
+  .ververs-status b.bezig{color:var(--rood)}
+  .spinner{width:14px;height:14px;border:2px solid var(--lijn);border-top-color:var(--rood);
+           border-radius:50%;animation:draai .8s linear infinite;flex:none}
+  @keyframes draai{to{transform:rotate(360deg)}}
+  #ververs-knoppen.bezig button[data-bron]{opacity:.5;pointer-events:none}
+</style>
+</head>
+<body>
+
+{% macro pitch(zijde, titel, kant='') -%}
+  <div>
+    <div class="pitch-head"><b class="{{ kant }}">{{ titel }}</b><span class="fm">{{ zijde.formatie or "—" }}</span></div>
+    {% if zijde and zijde.basis %}
+      <div class="pitch">
+        {% for rij in zijde.veld|reverse %}
+          <div class="pitch-row">
+            {% for p in rij %}
+              <div class="pp">
+                <span class="num">{{ p.nummer or "" }}</span>
+                <span class="nm">{{ p.kort }}{% if p.doelpunten %} <span class="mk">{{ '⚽' * p.doelpunten }}</span>{% endif %}</span>
+                {% if p.rating is not none %}
+                  <span class="rt {{ 's-hoog' if p.rating>=7 else 's-laag' if p.rating<6 else 's-mid' }}">{{ '%.1f'|format(p.rating) }}</span>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+      {% if zijde.bank %}
+        <div class="bench"><span>Bank:</span>
+          {% for p in zijde.bank %}
+            <span class="{{ 'b-in' if p.minuten }}">
+              {%- if p.minuten %}<b>{{ p.kort }}</b> {{ p.minuten }}′{% if p.rating is not none %} · {{ '%.1f'|format(p.rating) }}{% endif %}
+              {%- else %}{{ p.kort }}{% endif -%}
+            </span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p class="muted">Geen opstelling beschikbaar.</p>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+<header>
+  <div class="inner">
+    <img class="logo" src="/static/logo.png" alt="De Vierkante Paal">
+    <h1>De Vierkante Paal &nbsp;·&nbsp; <span class="club">{{ club }}</span></h1>
+    <span class="nu">{{ nu }}</span>
+  </div>
+</header>
+<main>
+
+  {% if fouten %}
+    {% for bron, f in fouten.items() %}
+      <div class="fout">
+        {% if f is mapping %}{{ f.kort }}
+          {% if f.detail %}<details><summary>technische details</summary><code>{{ f.detail }}</code></details>{% endif %}
+        {% else %}<strong>{{ bron }}</strong> ophalen mislukte: {{ f }}{% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <section>
+    <div class="bar" id="ververs-knoppen">
+      <button class="btn" data-bron="all">↻ Ververs alles</button>
+      {% for b in ["sofascore","fotmob","transfermarkt","voorbeschouwing"] %}
+      <button class="btn grijs klein" data-bron="{{ b }}">{{ b }}</button>
+      {% endfor %}
+      <a class="btn grijs klein" href="/export.md" target="_blank">export .md</a>
+      <a class="btn grijs klein" href="/print" target="_blank" rel="noopener"
+         title="Opent een afdrukvriendelijke pagina; kies daar 'Opslaan als PDF' als bestemming">🖨 afdrukken / PDF</a>
+    </div>
+
+    <div id="ververs-status" class="ververs-status" hidden>
+      <span class="spinner"></span>
+      <span id="ververs-tekst">Verversen…</span>
+    </div>
+
+    <div class="stempel">
+      Sofascore: {{ o.tijdstippen.sofascore|dt }} · FotMob: {{ o.tijdstippen.fotmob|dt }} ·
+      Transfermarkt: {{ o.tijdstippen.transfermarkt|dt }} · Voorbeschouwing: {{ o.tijdstippen.voorbeschouwing|dt }}
+      {% if versie %}&nbsp;·&nbsp;versie {{ versie }}{% endif %}
+    </div>
+    <div class="afsluit">
+      <button type="button" class="btn-af" id="btn-afsluiten">✕ Tool afsluiten</button>
+      <label><input type="checkbox" id="chk-blijf"> op de achtergrond laten draaien (niet automatisch afsluiten als ik het tabblad sluit)</label>
+    </div>
+  </section>
+
+  <nav class="tabs">
+    <button data-tab="wedstrijd" class="actief">Vorige wedstrijd</button>
+    <button data-tab="voorbeschouwing">Voorbeschouwing</button>
+    <button data-tab="statistieken">Statistieken</button>
+    <button data-tab="diagnose">Diagnose</button>
+    <button data-tab="export">Export</button>
+  </nav>
+
+  {% set v = o.sofascore.vorige %}
+  {% set n = o.sofascore.volgende %}
+  {% set vb = o.sofascore.voorbeschouwing %}
+  {% set thuis_naam = (v.thuis.naam if v else '') %}
+  {% set uit_naam = (v.uit.naam if v else '') %}
+
+  <div class="tab actief" data-tab="wedstrijd">
+  <!-- VORIGE WEDSTRIJD -->
+  <section>
+    <h2>Vorige wedstrijd</h2>
+
+    {% if o.sofascore.recente_matches %}
+    <form method="post" action="/kies-match" class="bar" style="margin-bottom:12px">
+      <label class="muted">Welke wedstrijd:</label>
+      <select name="event_id" onchange="this.form.submit()"
+              style="flex:1;min-width:240px;max-width:520px;padding:7px;border-radius:6px;border:1px solid var(--lijn)">
+        <option value="auto" {{ 'selected' if not o.sofascore.gekozen_event }}>Automatisch (recentste)</option>
+        {% for m in o.sofascore.recente_matches %}
+          <option value="{{ m.event_id }}" {{ 'selected' if o.sofascore.gekozen_event == m.event_id }}>{{ m.label }}</option>
+        {% endfor %}
+      </select>
+      <noscript><button class="btn klein">Kies</button></noscript>
+    </form>
+    {% endif %}
+
+    {% if v %}
+      <div class="score-hero">
+        <span class="team thuis {{ 'ant' if v.antwerp_thuis else 'teg' }}">{{ v.thuis.naam }}</span>
+        <span class="cijfer">{{ v.thuis.score if v.thuis.score is not none else '?' }} – {{ v.uit.score if v.uit.score is not none else '?' }}</span>
+        <span class="team uit {{ 'teg' if v.antwerp_thuis else 'ant' }}">{{ v.uit.naam }}</span>
+      </div>
+      <p class="muted" style="text-align:center">
+        {{ v.competitie }}{% if v.ronde %} · speeldag {{ v.ronde }}{% endif %} · {{ v.datum }}
+        {% if v.url %} · <a href="{{ v.url }}" target="_blank">Sofascore</a>{% endif %}
+      </p>
+
+      <h3>Opstellingen <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">— via {{ o.opstellingen.bron }}</span></h3>
+      <div class="pitches">
+        {{ pitch(o.opstellingen.vorige_antwerp, thuis_naam if v.antwerp_thuis else uit_naam, 'ant') }}
+        {{ pitch(o.opstellingen.vorige_tegenstander, uit_naam if v.antwerp_thuis else thuis_naam, 'teg') }}
+      </div>
+
+      <h3>Wedstrijdverloop</h3>
+      <div class="verloop-kop">
+        <span class="l {{ 'ant' if v.antwerp_thuis else 'teg' }}">{{ thuis_naam }}</span><span></span>
+        <span class="r {{ 'teg' if v.antwerp_thuis else 'ant' }}">{{ uit_naam }}</span>
+      </div>
+      <div class="verloop">
+        {% for e in v.tijdlijn %}
+          <div class="l {{ 'mijn' if e.antwerp else 'andere' }}">
+            {%- if e.thuis %}{{ e.tekst }}{% if e.stand %} <span class="st">{{ e.stand }}</span>{% endif %}{% endif -%}
+          </div>
+          <div class="m">{{ e.minuut }}'</div>
+          <div class="r {{ 'mijn' if e.antwerp else 'andere' }}">
+            {%- if not e.thuis %}{% if e.stand %}<span class="st">{{ e.stand }}</span> {% endif %}{{ e.tekst }}{% endif -%}
+          </div>
+        {% else %}
+          <div class="andere" style="grid-column:1/4;text-align:center">Geen wedstrijdgebeurtenissen gevonden.</div>
+        {% endfor %}
+      </div>
+
+      {% if v.statistiek %}
+      {% set ant_l = v.antwerp_thuis %}
+      <h3>Teamstatistieken</h3>
+      <div class="tablescroll"><table class="teamstat">
+        <thead><tr>
+          <th><span class="{{ 'ant' if ant_l else 'teg' }}">{{ thuis_naam }}</span></th><th></th>
+          <th><span class="{{ 'teg' if ant_l else 'ant' }}">{{ uit_naam }}</span></th>
+        </tr></thead>
+        <tbody>
+        {% for grp in v.statistiek[:1] %}
+          {% for r in grp.rijen %}
+          <tr><td class="num">{{ r.thuis }}</td><td class="mid">{{ r.naam }}</td><td>{{ r.uit }}</td></tr>
+          {% endfor %}
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% if v.statistiek|length > 1 %}
+      <details class="blok"><summary>alle statistieken (schoten, passes, duels, keeperswerk…)</summary>
+      <div class="tablescroll" style="margin-top:6px"><table class="teamstat">
+        <tbody>
+        {% for grp in v.statistiek[1:] %}
+          <tr class="grp"><td colspan="3">{{ grp.groep }}</td></tr>
+          {% for r in grp.rijen %}
+          <tr><td class="num">{{ r.thuis }}</td><td class="mid">{{ r.naam }}</td><td>{{ r.uit }}</td></tr>
+          {% endfor %}
+        {% endfor %}
+        </tbody>
+      </table></div>
+      </details>
+      {% endif %}
+      {% endif %}
+
+      {% if v.ontbrekend %}
+        <h3>Niet in selectie ({{ thuis_naam if v.antwerp_thuis else uit_naam }})</h3>
+        <p class="muted">
+          {% for m in v.ontbrekend %}{{ m.naam }}{% if m.reden %} ({{ m.reden }}){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}
+        </p>
+      {% endif %}
+
+      <!-- spelerscores: vlak onder het verloop -->
+      <h3>Spelerscores vorige wedstrijd</h3>
+      {% if o.scoretabel %}
+      <div class="bar" style="margin-bottom:10px">
+        <span class="muted">Open de match op:</span>
+        {% if o.score_links.sofascore %}<a class="btn grijs klein" href="{{ o.score_links.sofascore }}" target="_blank" rel="noopener">Sofascore ↗</a>{% endif %}
+        {% if o.score_links.fotmob %}<a class="btn grijs klein" href="{{ o.score_links.fotmob }}" target="_blank" rel="noopener">FotMob ↗</a>{% endif %}
+        <a class="btn grijs klein" href="{{ o.score_links.whoscored }}" target="_blank" rel="noopener">WhoScored ↗ <span class="muted">(clubpagina)</span></a>
+      </div>
+      <p class="muted">Sofascore en FotMob worden automatisch opgehaald. WhoScored vul je zelf in — die waarden blijven bewaard.
+         Klik een kolomtitel om te sorteren (bv. op <strong>Gemiddelde</strong>).</p>
+      <form method="post" action="/ratings">
+        <input type="hidden" name="event_id" value="{{ o.event_id or '' }}">
+        <div class="tablescroll"><table id="scoretabel" class="sorteerbaar">
+          <thead><tr>
+            <th onclick="sorteerTabel(this,0,false)">Speler</th>
+            <th class="num" onclick="sorteerTabel(this,1,true)">Min</th>
+            <th class="num" onclick="sorteerTabel(this,2,true)">Sofascore</th>
+            <th class="num" onclick="sorteerTabel(this,3,true)">FotMob</th>
+            <th class="num" onclick="sorteerTabel(this,4,true)">WhoScored</th>
+            <th class="num" onclick="sorteerTabel(this,5,true)">Gemiddelde</th>
+          </tr></thead>
+          <tbody>
+          {% for r in o.scoretabel %}
+          <tr>
+            <td data-v="{{ r.speler }}">{% if r.profiel_url %}<a href="{{ r.profiel_url }}" target="_blank">{{ r.speler }}</a>{% else %}{{ r.speler }}{% endif %}
+              {% if r.invaller %}<span class="muted">(in)</span>{% endif %}
+              {% if r.doelpunten %} ⚽{{ r.doelpunten }}{% endif %}{% if r.assists %} 🅰{{ r.assists }}{% endif %}</td>
+            <td class="num" data-v="{{ r.minuten or 0 }}">{{ r.minuten or '' }}</td>
+            <td class="num" data-v="{{ r.sofascore if r.sofascore is not none else 0 }}">{% if r.sofascore is not none %}
+              <span class="scorepil {{ 's-hoog' if r.sofascore>=7 else 's-laag' if r.sofascore<6 else 's-mid' }}">{{ '%.1f'|format(r.sofascore) }}</span>
+              {% else %}–{% endif %}</td>
+            <td class="num" data-v="{{ r.fotmob if r.fotmob is not none else 0 }}">{% if r.fotmob is not none %}
+              <span class="scorepil {{ 's-hoog' if r.fotmob>=7 else 's-laag' if r.fotmob<6 else 's-mid' }}">{{ '%.1f'|format(r.fotmob) }}</span>
+              {% else %}–{% endif %}</td>
+            <td class="num" data-v="{{ r.whoscored if r.whoscored is not none else 0 }}"><input class="rating" name="whoscored__{{ r.player_key }}"
+                value="{{ '%.2f'|format(r.whoscored) if r.whoscored is not none else '' }}" inputmode="decimal"></td>
+            <td class="num" data-v="{{ r.gemiddelde if r.gemiddelde is not none else 0 }}"><strong>{{ '%.2f'|format(r.gemiddelde) if r.gemiddelde is not none else '–' }}</strong></td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table></div>
+        <p><button class="btn klein">Scores bewaren</button></p>
+      </form>
+      {% else %}
+        <p class="muted">Nog geen opstelling. Ververs Sofascore of FotMob.</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">Nog geen data. Klik “Ververs alles”.</p>
+    {% endif %}
+  </section>
+  </div><!-- /tab wedstrijd -->
+
+  <div class="tab" data-tab="voorbeschouwing">
+  <!-- VOORBESCHOUWING -->
+  <section>
+    <h2>Voorbeschouwing volgende tegenstander</h2>
+    {% if n %}
+      {% set cv = vb.competitie_volgende if vb else none %}
+      <div class="score-hero geen">
+        <span class="team thuis {{ 'ant' if n.antwerp_thuis else 'teg' }}">{{ n.thuis.naam }}</span>
+        <span class="cijfer">{{ (n.datum or '')[11:16] or 'vs' }}</span>
+        <span class="team uit {{ 'teg' if n.antwerp_thuis else 'ant' }}">{{ n.uit.naam }}</span>
+      </div>
+      <p class="muted" style="text-align:center">
+        {{ n.competitie }}{% if n.ronde and (cv and cv.is_competitie) %} · speeldag {{ n.ronde }}{% endif %} · {{ (n.datum or '')[:10] }}
+        · {{ 'thuis' if n.antwerp_thuis else 'uit' }} voor Antwerp
+        {% if n.url %} · <a href="{{ n.url }}" target="_blank">Sofascore</a>{% endif %}
+      </p>
+
+      {% if cv and not cv.is_competitie %}
+      <div class="uitval-lijn bless">ℹ️ <strong>{{ n.competitie }}</strong> — geen competitiewedstrijd.
+        Het klassement hieronder is dat van {{ cv.klassement_naam or 'de competitie' }} en dus enkel ter info;
+        {{ n.tegenstander.naam }} staat er {{ 'wel' if cv.tegenstander_in_klassement else 'niet' }} in.
+      </div>
+      {% endif %}
+
+      {% set ref = vb.scheidsrechter if vb else none %}
+      {% if ref %}
+      <h3>Scheidsrechter</h3>
+      <div class="ref-kaart">
+        <span><strong>{{ ref.naam }}</strong>{% if ref.land %} <span class="g">({{ ref.land }})</span>{% endif %}</span>
+        <span class="g">{{ ref.matchen }} matchen</span>
+        <span>🟨 {{ ref.geel_per_match }}/match <span class="g">({{ ref.geel_totaal }} totaal)</span></span>
+        <span>🟥 {{ ref.rood_per_match }}/match <span class="g">({{ ref.rood_totaal }} totaal)</span></span>
+      </div>
+      {% endif %}
+
+      {% set opp = o.opstellingen.volgende_tegenstander %}
+      {% if opp %}
+        <h3>Opstelling {{ n.tegenstander.naam }}</h3>
+        <p class="muted" style="margin-top:-2px">
+          <strong>{{ opp.herkomst }}</strong>{% if opp.herkomst_detail %} — {{ opp.herkomst_detail }}{% endif %}
+        </p>
+        <div style="max-width:460px;margin:0 auto">{{ pitch(opp, n.tegenstander.naam, 'teg') }}</div>
+      {% endif %}
+
+      {% set rk = vb.reeksen if vb else none %}
+      {% if rk and (rk.algemeen or rk.onderling) %}
+      <h3>Reeksen &amp; mijlpalen</h3>
+      <ul class="reeks">
+        {% for r in rk.algemeen %}
+        <li><b class="{{ 'ant' if r.wie=='Antwerp' else 'teg' if r.wie==n.tegenstander.naam else '' }}">{{ r.wie }}</b>:
+            {{ r.tekst }} — <strong>{{ r.waarde }}</strong></li>
+        {% endfor %}
+        {% for r in rk.onderling %}
+        <li><span class="g">onderling · </span><b class="{{ 'ant' if r.wie=='Antwerp' else 'teg' if r.wie==n.tegenstander.naam else '' }}">{{ r.wie }}</b>:
+            {{ r.tekst }} — <strong>{{ r.waarde }}</strong></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% set vd = vb.vorm_detail if vb else none %}
+      {% if vd %}
+      <h3>Vorm — laatste 5 <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(oudste → nieuwste)</span></h3>
+      <div class="tablescroll"><table>
+        <thead><tr><th>Ploeg</th><th style="min-width:170px">Vorm</th><th class="num">Goals v/t</th><th class="num">Clean&nbsp;sheets</th>
+            <th class="num">Ongeslagen</th><th class="num">Scoren&nbsp;op&nbsp;rij</th></tr></thead>
+        <tbody>
+        {% for kant, wie, blk in [('ant', 'Antwerp', vd.antwerp), ('teg', n.tegenstander.naam, vd.tegenstander)] %}
+        <tr>
+          <td><span class="{{ kant }}">{{ wie }}</span></td>
+          <td style="white-space:nowrap">{% for c in (blk.laatste5.vorm or '') %}<span class="v-{{ c }}">{{ c }}</span>{% endfor %}</td>
+          <td class="num">{{ blk.laatste5.gf }}–{{ blk.laatste5.ga }}</td>
+          <td class="num">{{ blk.laatste5.clean_sheets }}</td>
+          <td class="num">{{ blk.ongeslagen }}</td>
+          <td class="num">{{ blk.scoren_op_rij }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      <p class="muted" style="margin-top:8px;line-height:2.1">
+        <span class="ant">Antwerp</span> thuis:
+        {% for c in (vd.antwerp.thuis5.vorm or '') %}<span class="v-{{ c }}">{{ c }}</span>{% endfor %}
+        ({{ vd.antwerp.thuis5.gf }}–{{ vd.antwerp.thuis5.ga }}) &nbsp;·&nbsp;
+        <span class="teg">{{ n.tegenstander.naam }}</span> uit:
+        {% for c in (vd.tegenstander.uit5.vorm or '') %}<span class="v-{{ c }}">{{ c }}</span>{% endfor %}
+        ({{ vd.tegenstander.uit5.gf }}–{{ vd.tegenstander.uit5.ga }})
+      </p>
+      {% endif %}
+
+      {% if vb and vb.h2h and vb.h2h.aantal %}
+      <h3>Onderlinge duels</h3>
+      <p><strong>Alle {{ vb.h2h.aantal }} duels:</strong>
+         <span class="ant">{{ vb.h2h.antwerp_winst }}× Antwerp</span> · {{ vb.h2h.gelijk }}× gelijk ·
+         <span class="teg">{{ vb.h2h.tegenstander_winst }}× {{ n.tegenstander.naam }}</span></p>
+      {% if vb.h2h.grootste_zege %}
+        <p class="muted">Grootste zege: {{ vb.h2h.grootste_zege.tekst }}
+           <span class="st">({{ (vb.h2h.grootste_zege.datum or '')[:10] }}, {{ vb.h2h.grootste_zege.competitie }})</span></p>
+      {% endif %}
+      {% if vb.h2h.grootste_nederlaag %}
+        <p class="muted">Grootste nederlaag: {{ vb.h2h.grootste_nederlaag.tekst }}
+           <span class="st">({{ (vb.h2h.grootste_nederlaag.datum or '')[:10] }}, {{ vb.h2h.grootste_nederlaag.competitie }})</span></p>
+      {% endif %}
+      <details class="blok"><summary>laatste {{ vb.h2h.laatste|length }} onderlinge duels</summary>
+        <ul style="list-style:none;padding:0;margin:6px 0 0;font-size:13.5px">
+          {% for m in vb.h2h.laatste %}<li style="padding:2px 0">{{ (m.datum or '')[:10] }} — {{ m.tekst }} <span class="st">{{ m.competitie }}</span></li>{% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+
+      {% if vb and vb.klassement %}
+      <h3>Klassement {{ cv.klassement_naam if cv else '' }}</h3>
+      {% set ns = namespace(prev=0) %}
+      <div class="tablescroll"><table>
+        <thead><tr><th class="num">#</th><th>Ploeg</th><th class="num">Gesp.</th><th class="num">W</th><th class="num">G</th><th class="num">V</th>
+            <th class="num">DP+</th><th class="num">DP−</th><th class="num">+/−</th><th class="num">Ptn</th></tr></thead>
+        <tbody>
+        {% for r in vb.klassement if r.positie <= 4 or r.antwerp or r.tegenstander %}
+          {% if r.positie - ns.prev > 1 %}<tr><td colspan="10" class="muted" style="text-align:center;padding:2px">⋯</td></tr>{% endif %}
+          <tr class="{{ 'pos-ant' if r.antwerp else 'pos-teg' if r.tegenstander else '' }}">
+            <td class="num">{{ r.positie }}</td><td>{{ r.team }}</td><td class="num">{{ r.gespeeld }}</td>
+            <td class="num">{{ r.gewonnen }}</td><td class="num">{{ r.gelijk }}</td><td class="num">{{ r.verloren }}</td>
+            <td class="num">{{ r.dp_voor }}</td><td class="num">{{ r.dp_tegen }}</td><td class="num">{{ r.saldo }}</td>
+            <td class="num"><strong>{{ r.punten }}</strong></td>
+          </tr>
+          {% set ns.prev = r.positie %}
+        {% endfor %}
+        </tbody>
+      </table></div>
+      <details class="blok"><summary>volledig klassement</summary>
+      <div class="tablescroll" style="margin-top:6px"><table>
+        <thead><tr><th class="num">#</th><th>Ploeg</th><th class="num">Gesp.</th><th class="num">W</th><th class="num">G</th><th class="num">V</th>
+            <th class="num">DP+</th><th class="num">DP−</th><th class="num">+/−</th><th class="num">Ptn</th></tr></thead>
+        <tbody>
+        {% for r in vb.klassement %}
+          <tr class="{{ 'pos-ant' if r.antwerp else 'pos-teg' if r.tegenstander else '' }}">
+            <td class="num">{{ r.positie }}</td><td>{{ r.team }}</td><td class="num">{{ r.gespeeld }}</td>
+            <td class="num">{{ r.gewonnen }}</td><td class="num">{{ r.gelijk }}</td><td class="num">{{ r.verloren }}</td>
+            <td class="num">{{ r.dp_voor }}</td><td class="num">{{ r.dp_tegen }}</td><td class="num">{{ r.saldo }}</td>
+            <td class="num"><strong>{{ r.punten }}</strong></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      </details>
+      {% endif %}
+
+      {% if vb and vb.tegenstander_sterkhouders %}
+      <h3>Sterkhouders <span class="teg">{{ n.tegenstander.naam }}</span> <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(dit seizoen)</span></h3>
+      <div class="drie">
+        {% for kat, titel in [("rating","Beste rating"),("goals","Meeste goals"),("assists","Meeste assists")] %}
+        <div class="kaart">
+          <h4>{{ titel }}</h4>
+          <ol>
+            {% for s in vb.tegenstander_sterkhouders[kat] %}
+              <li>{{ s.naam }} — <strong>{{ s.waarde }}</strong>
+                  <span class="muted">({{ s.wedstrijden or '?' }} w)</span></li>
+            {% else %}<li class="muted">–</li>{% endfor %}
+          </ol>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if vb and vb.tegenstander_vorm_matches %}
+      <details class="blok"><summary>laatste resultaten {{ n.tegenstander.naam }}</summary>
+      <ul style="list-style:none;padding:0;margin:6px 0 0;font-size:13.5px">
+        {% for m in vb.tegenstander_vorm_matches %}
+          <li style="padding:3px 0;border-bottom:1px dashed var(--lijn)">
+            <span class="muted">{{ (m.datum or '')[:10] }}</span> &nbsp; {{ m.tekst }} <span class="st">{{ m.competitie }}</span></li>
+        {% endfor %}
+      </ul>
+      </details>
+      {% endif %}
+
+      {% set ts = vb.topschutters if vb else none %}
+      {% if ts and (ts.goals or ts.assists) %}
+      <details class="blok"><summary>Pro League — topschutters &amp; assists</summary>
+      <div class="conn" style="margin-top:8px">
+        {% for kat, titel in [("goals","Topschutters"),("assists","Assists")] %}
+        <div class="kaart">
+          <h4>{{ titel }}</h4>
+          <ol style="margin:0;padding-left:18px;font-size:13.5px">
+            {% for s in ts[kat] %}
+            <li class="{{ 'is-ant' if s.antwerp }}">{{ s.naam }} — <strong>{{ s.waarde }}</strong>
+                <span class="muted">({{ s.wedstrijden or '?' }} w)</span></li>
+            {% endfor %}
+          </ol>
+        </div>
+        {% endfor %}
+      </div>
+      </details>
+      {% endif %}
+
+      {% set ve = o.voorbeschouwing_extra %}
+      {% set opp_uitval = ve.uitval if ve else none %}
+      {% if opp_uitval and (opp_uitval.geschorst or opp_uitval.geblesseerd) %}
+      <h3>Afwezigen {{ n.tegenstander.naam }}</h3>
+      {% if opp_uitval.geschorst %}
+      <p class="uitval-lijn schors">🚫 <strong>Geschorst:</strong>
+        {% for p in opp_uitval.geschorst %}{{ p.speler }}{% if p.reden %} ({{ p.reden }}){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+      {% endif %}
+      {% if opp_uitval.geblesseerd %}
+      <p class="uitval-lijn bless">🤕 <strong>Geblesseerd:</strong>
+        {% for p in opp_uitval.geblesseerd %}{{ p.speler }}{% if p.reden %} ({{ p.reden }}{% if p.terug %}, terug {{ p.terug }}{% endif %}){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+      {% endif %}
+      {% endif %}
+
+      {% set con = ve.connecties if ve else none %}
+      {% if con and (con.ex_antwerp_bij_tegenstander or con.ex_tegenstander_bij_antwerp) %}
+      <h3>Connecties <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">— spelers die nu bij één van beide clubs zitten</span></h3>
+      <div class="conn">
+        <div class="kaart">
+          <h4>Ex-Antwerp, nu bij {{ n.tegenstander.naam }}</h4>
+          <ul style="margin:0;padding-left:18px;font-size:13.5px">
+            {% for c in con.ex_antwerp_bij_tegenstander %}<li>{{ c.speler }}<span class="muted"> — verliet Antwerp naar {{ c.via }}</span></li>
+            {% else %}<li class="muted">geen</li>{% endfor %}
+          </ul>
+        </div>
+        <div class="kaart">
+          <h4>Ex-{{ n.tegenstander.naam }}, nu bij Antwerp</h4>
+          <ul style="margin:0;padding-left:18px;font-size:13.5px">
+            {% for c in con.ex_tegenstander_bij_antwerp %}<li>{{ c.speler }}<span class="muted"> — kwam van {{ c.van }}</span></li>
+            {% else %}<li class="muted">geen</li>{% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% elif not ve %}
+      <p class="muted" style="margin-top:14px">Blessures/schorsingen tegenstander en connecties: klik de knop <strong>voorbeschouwing</strong> bovenaan.</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">Nog geen data.</p>
+    {% endif %}
+  </section>
+  </div><!-- /tab voorbeschouwing -->
+
+  <div class="tab" data-tab="statistieken">
+  <!-- STATISTIEKEN -->
+  <section>
+    <h2>Statistieken seizoen {{ o.transfermarkt.seizoen or '' }}</h2>
+    {% if o.stattabel %}
+    {% set uitval = o.transfermarkt.uitval or {} %}
+    {% if uitval.geschorst %}
+      <p class="uitval-lijn schors">🚫 <strong>Geschorst
+        {%- if n and n.tegenstander %} voor {{ n.tegenstander.naam }}{% endif %}:</strong>
+        {% for p in uitval.geschorst %}{{ p.speler }}{% if p.reden %} ({{ p.reden }}){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}
+      </p>
+    {% endif %}
+    {% if uitval.geblesseerd %}
+      <p class="uitval-lijn bless">🤕 <strong>Geblesseerd:</strong>
+        {% for p in uitval.geblesseerd %}{{ p.speler }}{% if p.reden %} ({{ p.reden }}{% if p.terug %}, terug {{ p.terug }}{% endif %}){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}
+      </p>
+    {% endif %}
+    <p class="muted">
+      Wedstrijden/goals/assists/kaarten/minuten: <a href="{{ o.transfermarkt.bron_url }}" target="_blank">Transfermarkt</a> (alle competities).
+      {% if o.sofascore.seizoen_ratings %}Gem. rating: Sofascore ({{ o.sofascore.seizoen_ratings.competitie }}).{% endif %}
+      Klik een kolomtitel om te sorteren. Tussen haakjes: verschil sinds de vorige verversing.
+    </p>
+    <div class="tablescroll"><table id="stattabel" class="sorteerbaar">
+      <thead><tr>
+        <th onclick="sorteerTabel(this,0,false)">Speler</th>
+        <th class="num" onclick="sorteerTabel(this,1,true)">Gem. rating</th>
+        <th class="num" onclick="sorteerTabel(this,2,true)">Wedstrijden</th>
+        <th class="num" onclick="sorteerTabel(this,3,true)">Goals</th>
+        <th class="num" onclick="sorteerTabel(this,4,true)">Assists</th>
+        <th class="num" onclick="sorteerTabel(this,5,true)">🟨</th>
+        <th class="num" onclick="sorteerTabel(this,6,true)">🟥</th>
+        <th class="num" onclick="sorteerTabel(this,7,true)">Minuten</th>
+      </tr></thead>
+      <tbody>
+      {% for r in o.stattabel %}
+      <tr>
+        <td data-v="{{ r.speler }}">
+          {% if r.profiel_url %}<a href="{{ r.profiel_url }}" target="_blank">{{ r.speler }}</a>{% else %}{{ r.speler }}{% endif %}
+          {% if r.geschorst %}<span class="badge schors" title="{{ r.geschorst.reden }}">geschorst</span>{% endif %}
+          {% if r.geblesseerd %}<span class="badge bless" title="{{ r.geblesseerd.reden }}">geblesseerd</span>{% endif %}
+        </td>
+        <td class="num" data-v="{{ r.gem_rating if r.gem_rating is not none else 0 }}">
+          {% if r.gem_rating is not none %}
+            <span class="scorepil {{ 's-hoog' if r.gem_rating>=7 else 's-laag' if r.gem_rating<6 else 's-mid' }}">{{ '%.2f'|format(r.gem_rating) }}</span>
+          {% else %}–{% endif %}</td>
+        {% for veld, d in [("wedstrijden", r.d_wedstrijden), ("goals", r.d_goals), ("assists", r.d_assists), ("geel", r.d_geel), ("rood", r.d_rood), ("minuten", r.d_minuten)] %}
+        <td class="num" data-v="{{ r[veld] }}">{{ r[veld] }}{% if d %}<span class="{{ 'delta-pos' if d>0 else 'delta-neg' }}">{{ ' (+%d)'|format(d) if d>0 else ' (%d)'|format(d) }}</span>{% endif %}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+      <p class="muted">Nog geen data. Ververs Transfermarkt.</p>
+    {% endif %}
+  </section>
+  </div><!-- /tab statistieken -->
+
+  <div class="tab" data-tab="diagnose">
+  <section>
+    <h2>Diagnose — naam-matching</h2>
+    <p class="muted">Spelers/clubs die de tool niet automatisch kon koppelen tussen de bronnen.
+       Voeg een alias toe zodat de tool het voortaan wél herkent (verdwijnt na een verversing).</p>
+
+    {% set dg = o.diagnose %}
+    <h3>Scoretabel-spelers zonder Transfermarkt-koppeling</h3>
+    {% if dg.scoretabel_zonder_transfermarkt %}
+      <p>{{ dg.scoretabel_zonder_transfermarkt|join(' · ') }}</p>
+    {% else %}<p class="muted">Alles gekoppeld ✓</p>{% endif %}
+
+    <h3>Sofascore-rating-namen niet in de statistiektabel</h3>
+    {% if dg.rating_zonder_stattabel %}
+      <p>{{ dg.rating_zonder_stattabel|join(' · ') }}</p>
+    {% else %}<p class="muted">Alles gekoppeld ✓</p>{% endif %}
+
+    <h3>Alias toevoegen</h3>
+    <form method="post" action="/alias" class="bar">
+      <input type="text" name="van" placeholder="naam zoals bij bron X" style="flex:1;min-width:160px;padding:7px;border-radius:6px">
+      <span class="muted">→</span>
+      <input type="text" name="naar" placeholder="naam zoals bij Sofascore" style="flex:1;min-width:160px;padding:7px;border-radius:6px">
+      <button class="btn klein">Opslaan</button>
+    </form>
+
+    {% if dg.aliassen_eigen or dg.aliassen_config %}
+    <h3>Actieve aliassen</h3>
+    <ul style="list-style:none;padding:0;margin:0;font-size:13.5px">
+      {% for van, naar in dg.aliassen_eigen.items() %}<li><code>{{ van }}</code> → <code>{{ naar }}</code> <span class="muted">(eigen)</span></li>{% endfor %}
+      {% for van, naar in dg.aliassen_config.items() %}<li><code>{{ van }}</code> → <code>{{ naar }}</code> <span class="muted">(config.py)</span></li>{% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+  </div>
+
+  <div class="tab" data-tab="export">
+  <section>
+    <h2>Export &amp; afleveringen</h2>
+    <details open>
+      <summary>Markdown / tekst om te plakken (alles)</summary>
+      <p><button class="btn klein" type="button" onclick="kopieer()">Kopieer</button>
+         <span id="kopie-ok" class="muted"></span></p>
+      <textarea id="md" readonly>{{ markdown }}</textarea>
+    </details>
+
+    <h3>Bewaar als aflevering</h3>
+    <p class="muted">
+      Slaat het volledige overzicht (uitslag, opstellingen, verloop, teamstats, scores,
+      voorbeschouwing, statistieken) op als een <strong>Markdown-bestand in de map
+      <code>{{ afleveringen_map }}</code></strong> (en een kopie in <code>data/dvp.sqlite</code>).
+      De link hieronder opent een nette weergave.
+    </p>
+    <form method="post" action="/episode">
+      <input type="text" name="titel" placeholder="Titel — bv. Aflevering 42 — Antwerp-STVV"
+             style="width:100%;max-width:520px;padding:8px;border-radius:6px;margin-bottom:8px">
+      <textarea name="notities" placeholder="Eigen notities (optioneel) — worden mee opgeslagen bij deze aflevering."
+                style="min-height:110px"></textarea>
+      <p><button class="btn klein">Bewaren</button></p>
+    </form>
+    {% if episodes %}
+      <h3>Bewaarde afleveringen</h3>
+      <ul style="list-style:none;padding:0;margin:0;font-size:13.5px">
+        {% for e in episodes %}
+        <li style="padding:4px 0;border-bottom:1px dashed var(--lijn)">
+          <span class="muted">{{ e.created_at[:16]|replace('T',' ') }}</span> &nbsp;
+          <a href="/episode?id={{ e.id }}" target="_blank">{{ e.title }}</a>
+          {% if e.bestand %}<span class="muted"> — {{ e.bestand }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+  </div>
+
+</main>
+<script>
+  function kopieer(){
+    const t=document.getElementById('md');
+    navigator.clipboard.writeText(t.value).then(()=>{
+      document.getElementById('kopie-ok').textContent='gekopieerd ✓';
+      setTimeout(()=>document.getElementById('kopie-ok').textContent='',2500);
+    });
+  }
+  function sorteerTabel(th, kol, numeriek){
+    const tabel=th.closest('table'), tb=tabel.tBodies[0], rijen=[...tb.rows];
+    const richting=(tabel.dataset.sc==kol && tabel.dataset.sd=='asc') ? 'desc' : 'asc';
+    rijen.sort((a,b)=>{
+      let x=a.cells[kol].dataset.v, y=b.cells[kol].dataset.v;
+      if(numeriek){ x=parseFloat(x)||0; y=parseFloat(y)||0; return richting=='asc'?x-y:y-x; }
+      return richting=='asc'? String(x).localeCompare(y) : String(y).localeCompare(x);
+    });
+    rijen.forEach(r=>tb.appendChild(r));
+    tabel.dataset.sc=kol; tabel.dataset.sd=richting;
+    [...tabel.tHead.rows[0].cells].forEach((c,i)=>c.dataset.arrow = i==kol ? (richting=='asc'?'▲':'▼') : '');
+  }
+
+  // tabs
+  (function(){
+    const knoppen=[...document.querySelectorAll('.tabs button')];
+    const tabs=[...document.querySelectorAll('.tab')];
+    function toon(naam){
+      knoppen.forEach(b=>b.classList.toggle('actief', b.dataset.tab===naam));
+      tabs.forEach(t=>t.classList.toggle('actief', t.dataset.tab===naam));
+      try{ localStorage.setItem('dvp-tab', naam); }catch(e){}
+    }
+    knoppen.forEach(b=>b.addEventListener('click',()=>toon(b.dataset.tab)));
+    let start='wedstrijd';
+    try{ const s=localStorage.getItem('dvp-tab'); if(s && knoppen.some(b=>b.dataset.tab===s)) start=s; }catch(e){}
+    toon(start);
+  })();
+
+  // verversen op de achtergrond, met voortgang
+  (function(){
+    const knoppen=document.getElementById('ververs-knoppen');
+    const status=document.getElementById('ververs-status');
+    const tekst=document.getElementById('ververs-tekst');
+    let poller=null, mislukt=0;
+
+    function stop(){ if(poller){clearInterval(poller);poller=null;} knoppen.classList.remove('bezig'); }
+
+    function toonVoortgang(t){
+      const labels=t.labels||{};
+      const delen=Object.entries(t.stappen||{}).map(([k,st])=>{
+        const nm=labels[k]||k;
+        if(st==='klaar') return '<b class=ok>'+nm+' ✓</b>';
+        if(st==='fout')  return '<b class=fout>'+nm+' ✕</b>';
+        if(st==='bezig') return '<b class=bezig>'+nm+'…</b>';
+        return '<span style=opacity:.5>'+nm+'</span>';
+      });
+      tekst.innerHTML = 'Verversen &nbsp; ' + delen.join(' &nbsp;·&nbsp; ');
+    }
+
+    function poll(){
+      fetch('/refresh-status').then(r=>r.json()).then(t=>{
+        mislukt=0;
+        if(t.bezig){ toonVoortgang(t); return; }
+        stop();
+        tekst.innerHTML='Klaar ✓ — pagina wordt herladen…';
+        setTimeout(()=>location.reload(), 500);
+      }).catch(()=>{
+        if(++mislukt>=5){ stop(); location.reload(); }
+      });
+    }
+
+    function start(bron){
+      if(poller) return;
+      mislukt=0; status.hidden=false; knoppen.classList.add('bezig');
+      tekst.textContent='Verversen gestart…';
+      fetch('/refresh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'bron='+encodeURIComponent(bron)})
+        .then(()=>{ poller=setInterval(poll,1000); poll(); })
+        .catch(()=>{ tekst.innerHTML='Verversen kon niet starten. Ververs de pagina en probeer opnieuw.'; stop(); });
+    }
+
+    knoppen.querySelectorAll('button[data-bron]').forEach(b=>
+      b.addEventListener('click',()=>start(b.dataset.bron)));
+
+    if({{ 'true' if verversen_bezig else 'false' }}){
+      status.hidden=false; knoppen.classList.add('bezig');
+      poller=setInterval(poll,1000); poll();
+    } else if({{ 'true' if data_verouderd else 'false' }}){
+      let al=false; try{ al=sessionStorage.getItem('dvp-auto')==='1'; }catch(e){}
+      if(!al){ try{ sessionStorage.setItem('dvp-auto','1'); }catch(e){} start('all'); }
+    }
+  })();
+
+  // afsluiten + hartslag: sluit automatisch af als geen enkel tabblad meer open is
+  (function(){
+    const chk=document.getElementById('chk-blijf');
+    let blijf={{ 'true' if blijf_draaien else 'false' }};
+    try{ const s=localStorage.getItem('dvp-blijf'); if(s!==null) blijf=(s==='1'); }catch(e){}
+    chk.checked=blijf;
+    function hb(){ fetch('/heartbeat?blijf='+(chk.checked?1:0)).catch(function(){}); }
+    chk.addEventListener('change',function(){
+      try{ localStorage.setItem('dvp-blijf', chk.checked?'1':'0'); }catch(e){}
+      hb();
+    });
+    hb();
+    setInterval(hb, 20000);
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) hb(); });
+
+    document.getElementById('btn-afsluiten').addEventListener('click',function(){
+      if(!confirm('De tool nu helemaal afsluiten? Ze draait daarna niet meer op de achtergrond.')) return;
+      fetch('/afsluiten',{method:'POST'}).then(function(){
+        document.body.innerHTML='<p style="padding:40px;font:16px/1.5 system-ui;color:#e7e9ee">'
+          +'De tool is afgesloten. Je mag dit tabblad sluiten.</p>';
+      });
+    });
+  })();
+</script>
+</body>
+</html>
