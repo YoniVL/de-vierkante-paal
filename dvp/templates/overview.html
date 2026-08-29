@@ -795,36 +795,66 @@
 
   <div class="tab" data-tab="diagnose">
   <section>
-    <h2>Diagnose — naam-matching</h2>
-    <p class="muted">Spelers/clubs die de tool niet automatisch kon koppelen tussen de bronnen.
-       Voeg een alias toe zodat de tool het voortaan wél herkent (verdwijnt na een verversing).</p>
-
+    <h2>Diagnose — spelers koppelen</h2>
     {% set dg = o.diagnose %}
-    <h3>Scoretabel-spelers zonder Transfermarkt-koppeling</h3>
+
+    <h3>Spelers zonder Transfermarkt-koppeling</h3>
     {% if dg.scoretabel_zonder_transfermarkt %}
-      <p>{{ dg.scoretabel_zonder_transfermarkt|join(' · ') }}</p>
-    {% else %}<p class="muted">Alles gekoppeld ✓</p>{% endif %}
+      <p class="muted">De tool vond deze spelers niet automatisch terug op Transfermarkt.
+         Open hun Transfermarkt-profiel in een nieuw tabblad en plak de link (of gewoon het
+         spelernummer uit de URL) hieronder. Dat wordt onthouden.</p>
+      {% for s in dg.scoretabel_zonder_transfermarkt %}
+      <form method="post" action="/speler-link" class="bar" style="margin-bottom:8px">
+        <input type="hidden" name="player_key" value="{{ s.player_key }}">
+        <strong style="min-width:150px">{{ s.speler }}</strong>
+        <input type="text" name="url" placeholder="https://www.transfermarkt.com/…/profil/spieler/12345"
+               style="flex:1;min-width:220px;padding:7px;border-radius:6px">
+        <button class="btn klein">Koppelen</button>
+      </form>
+      {% endfor %}
+    {% else %}<p class="muted">Alle spelers gekoppeld ✓</p>{% endif %}
 
-    <h3>Sofascore-rating-namen niet in de statistiektabel</h3>
-    {% if dg.rating_zonder_stattabel %}
-      <p>{{ dg.rating_zonder_stattabel|join(' · ') }}</p>
-    {% else %}<p class="muted">Alles gekoppeld ✓</p>{% endif %}
-
-    <h3>Alias toevoegen</h3>
-    <form method="post" action="/alias" class="bar">
-      <input type="text" name="van" placeholder="naam zoals bij bron X" style="flex:1;min-width:160px;padding:7px;border-radius:6px">
-      <span class="muted">→</span>
-      <input type="text" name="naar" placeholder="naam zoals bij Sofascore" style="flex:1;min-width:160px;padding:7px;border-radius:6px">
-      <button class="btn klein">Opslaan</button>
-    </form>
-
-    {% if dg.aliassen_eigen or dg.aliassen_config %}
-    <h3>Actieve aliassen</h3>
+    {% if dg.speler_links %}
+    <h3>Handmatige koppelingen</h3>
     <ul style="list-style:none;padding:0;margin:0;font-size:13.5px">
-      {% for van, naar in dg.aliassen_eigen.items() %}<li><code>{{ van }}</code> → <code>{{ naar }}</code> <span class="muted">(eigen)</span></li>{% endfor %}
-      {% for van, naar in dg.aliassen_config.items() %}<li><code>{{ van }}</code> → <code>{{ naar }}</code> <span class="muted">(config.py)</span></li>{% endfor %}
+      {% for sleutel, info in dg.speler_links.items() %}
+      <li style="display:flex;align-items:center;gap:8px;padding:3px 0">
+        <a href="{{ info.url }}" target="_blank">{{ sleutel }}</a>
+        <span class="muted">spieler/{{ info.spieler_id }}</span>
+        <form method="post" action="/speler-link" style="display:inline">
+          <input type="hidden" name="player_key" value="{{ sleutel }}">
+          <input type="hidden" name="url" value="">
+          <button class="btn grijs klein" style="padding:2px 8px">verwijderen</button>
+        </form>
+      </li>
+      {% endfor %}
     </ul>
     {% endif %}
+
+    {% if dg.rating_zonder_stattabel %}
+    <h3>Sofascore-rating-namen niet in de statistiektabel</h3>
+    <p class="muted">{{ dg.rating_zonder_stattabel|join(' · ') }} — vaak opgelost door hierboven
+       de Transfermarkt-link toe te voegen.</p>
+    {% endif %}
+
+    <details class="blok" style="margin-top:18px">
+      <summary>Geavanceerd: naam-alias toevoegen</summary>
+      <p class="muted">Een alias koppelt twee schrijfwijzen van dezelfde naam tussen de bronnen
+         (ook voor FotMob en clubnamen). Linkerveld = naam zoals ze fout staat, rechterveld =
+         naam zoals bij Sofascore.</p>
+      <form method="post" action="/alias" class="bar">
+        <input type="text" name="van" placeholder="naam zoals bij bron X" style="flex:1;min-width:160px;padding:7px;border-radius:6px">
+        <span class="muted">→</span>
+        <input type="text" name="naar" placeholder="naam zoals bij Sofascore" style="flex:1;min-width:160px;padding:7px;border-radius:6px">
+        <button class="btn klein">Opslaan</button>
+      </form>
+      {% if dg.aliassen_eigen or dg.aliassen_config %}
+      <ul style="list-style:none;padding:0;margin:8px 0 0;font-size:13.5px">
+        {% for van, naar in dg.aliassen_eigen.items() %}<li><code>{{ van }}</code> → <code>{{ naar }}</code> <span class="muted">(eigen)</span></li>{% endfor %}
+        {% for van, naar in dg.aliassen_config.items() %}<li><code>{{ van }}</code> → <code>{{ naar }}</code> <span class="muted">(config.py)</span></li>{% endfor %}
+      </ul>
+      {% endif %}
+    </details>
   </section>
   </div>
 

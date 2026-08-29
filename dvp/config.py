@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as _dt
+import os
 import sys
 from pathlib import Path
 
@@ -33,7 +34,19 @@ PRO_LEAGUE_TM: dict[str, tuple[int, str]] = {
 
 # --- Server ------------------------------------------------------------------
 HOST = "127.0.0.1"
-PORT = 8756
+# Poort: standaard 8756. Te overschrijven met de omgevingsvariabele DVP_PORT
+# of een bestandje poort.txt naast de app.
+def _poort() -> int:
+    ev = os.environ.get("DVP_PORT", "")
+    if ev.isdigit():
+        return int(ev)
+    try:
+        return int((Path(__file__).resolve().parent.parent / "poort.txt").read_text().strip())
+    except (OSError, ValueError):
+        return 8756
+
+
+PORT = _poort()
 
 # --- Opslag -----------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent

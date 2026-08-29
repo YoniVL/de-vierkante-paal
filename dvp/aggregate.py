@@ -21,6 +21,11 @@ def _aliassen() -> dict:
     return store.get_kv("aliassen", {}) or {}
 
 
+def _speler_tm() -> dict:
+    """Handmatig toegevoegde Transfermarkt-links: {genormaliseerde spelernaam: {url, spieler_id}}."""
+    return store.get_kv("speler_tm", {}) or {}
+
+
 def _whoscored_link() -> str | None:
     if not merk.toon_whoscored():
         return None
@@ -74,6 +79,13 @@ def bouw_stattabel(transfermarkt: dict, sofascore: dict | None = None) -> list[d
 
     seizoen_ratings = ((sofascore or {}).get("seizoen_ratings") or {}).get("spelers") or {}
     rating_koppelaar = NaamKoppelaar(list(seizoen_ratings), _aliassen()) if seizoen_ratings else None
+    # handmatige Transfermarkt-links koppelen de seizoensrating via het spieler-id
+    _handmatig = _speler_tm()
+    _id_naar_rating = {
+        _handmatig[normaliseer(naam)]["spieler_id"]: naam
+        for naam in seizoen_ratings
+        if _handmatig.get(normaliseer(naam), {}).get("spieler_id")
+    }
 
     uitval = (transfermarkt or {}).get("uitval") or {}
     geschorst = {normaliseer(p["speler"]): p for p in uitval.get("geschorst", [])}
@@ -86,7 +98,9 @@ def bouw_stattabel(transfermarkt: dict, sofascore: dict | None = None) -> list[d
         key = normaliseer(sp["speler"])
         toen = vorige_snapshot.get(key, {})
         rating = None
-        if rating_koppelaar:
+        if sp.get("tm_id") and str(sp["tm_id"]) in _id_naar_rating:
+            rating = seizoen_ratings[_id_naar_rating[str(sp["tm_id"])]].get("rating")
+        elif rating_koppelaar:
             match = rating_koppelaar.koppel(sp["speler"])
             if match:
                 rating = seizoen_ratings[match].get("rating")
@@ -136,14 +150,18 @@ def snapshot_rijen(transfermarkt: dict) -> list[dict]:
 def koppel_profielen(scoretabel: list[dict], transfermarkt: dict) -> None:
     """Voeg aan elke scorerij de Transfermarkt-profiel-URL toe (indien te matchen)."""
     tm_spelers = (transfermarkt or {}).get("spelers") or []
-    if not tm_spelers:
-        return
-    koppelaar = NaamKoppelaar([s["speler"] for s in tm_spelers], _aliassen())
+    handmatig = _speler_tm()
     per_naam = {s["speler"]: s for s in tm_spelers}
+    koppelaar = NaamKoppelaar([s["speler"] for s in tm_spelers], _aliassen()) if tm_spelers else None
     for rij in scoretabel:
-        master = koppelaar.koppel(rij["speler"])
-        if master and master in per_naam:
-            rij["profiel_url"] = per_naam[master].get("profiel_url")
+        if koppelaar:
+            master = koppelaar.koppel(rij["speler"])
+            if master and master in per_naam:
+                rij["profiel_url"] = per_naam[master].get("profiel_url")
+        # handmatig toegevoegde link wint altijd
+        eigen = handmatig.get(rij["player_key"])
+        if eigen and eigen.get("url"):
+            rij["profiel_url"] = eigen["url"]
 
 
 def _kies_opstellingen(sofascore: dict, fotmob: dict) -> dict:
@@ -165,8 +183,10 @@ def _kies_opstellingen(sofascore: dict, fotmob: dict) -> dict:
 def _diagnose(overzicht: dict) -> dict:
     """Namen die de tool niet kon koppelen tussen bronnen."""
     so = overzicht["sofascore"]
+    handmatig = _speler_tm()
     ongekoppeld_tm = [
-        r["speler"] for r in overzicht["scoretabel"] if not r.get("profiel_url")
+        {"speler": r["speler"], "player_key": r["player_key"]}
+        for r in overzicht["scoretabel"] if not r.get("profiel_url")
     ]
     # seizoensrating-namen niet in de stattabel
     stat_namen = {normaliseer(r["speler"]) for r in overzicht["stattabel"]}
@@ -174,10 +194,12 @@ def _diagnose(overzicht: dict) -> dict:
     ongekoppeld_rating = [
         naam for naam in ((so.get("seizoen_ratings") or {}).get("spelers") or {})
         if normaliseer(naam) not in stat_namen and not rating_koppelaar.koppel(naam)
+        and not handmatig.get(normaliseer(naam), {}).get("spieler_id")
     ]
     return {
         "scoretabel_zonder_transfermarkt": ongekoppeld_tm,
         "rating_zonder_stattabel": ongekoppeld_rating,
+        "speler_links": handmatig,
         "aliassen_config": dict(config.SPELER_ALIASSEN),
         "aliassen_eigen": _aliassen(),
     }

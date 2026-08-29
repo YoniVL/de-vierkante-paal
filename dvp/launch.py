@@ -9,6 +9,7 @@ bureaublad-snelkoppeling of de Opstarten-map van Windows.
 
 from __future__ import annotations
 
+import os
 import socket
 import subprocess
 import sys
@@ -17,7 +18,20 @@ import webbrowser
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-HOST, PORT = "127.0.0.1", 8756
+HOST = "127.0.0.1"
+
+
+def _poort() -> int:
+    ev = os.environ.get("DVP_PORT", "")
+    if ev.isdigit():
+        return int(ev)
+    try:
+        return int((BASE / "poort.txt").read_text().strip())
+    except (OSError, ValueError):
+        return 8756
+
+
+PORT = _poort()
 URL = f"http://{HOST}:{PORT}"
 
 

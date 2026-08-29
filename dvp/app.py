@@ -500,6 +500,21 @@ class Handler(BaseHTTPRequestHandler):
                     aliassen[normaliseer(van)] = naar
                     store.set_kv("aliassen", aliassen)
                 self._redirect()
+            elif pad == "/speler-link":
+                sleutel = (form.get("player_key") or [""])[0].strip()
+                url = (form.get("url") or [""])[0].strip()
+                if sleutel:
+                    links = store.get_kv("speler_tm", {}) or {}
+                    m = re.search(r"spieler/(\d+)", url) or re.search(r"^(\d{2,})$", url)
+                    if url and m:
+                        sid = m.group(1)
+                        if "transfermarkt." not in url:
+                            url = f"https://www.transfermarkt.com/x/profil/spieler/{sid}"
+                        links[sleutel] = {"url": url, "spieler_id": sid}
+                    else:
+                        links.pop(sleutel, None)
+                    store.set_kv("speler_tm", links)
+                self._redirect()
             elif pad == "/afsluiten":
                 self._stuur(b"<!doctype html><meta charset=utf-8>"
                             b"<body style='background:#0e1014;color:#e7e9ee;font-family:system-ui;padding:40px'>"
