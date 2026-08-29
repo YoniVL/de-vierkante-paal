@@ -109,8 +109,19 @@ def _team_overview(team_id: int | str) -> dict | None:
         return None
 
 
+import re as _re
+
+# Jeugd-, vrouwen- en reserveteams eruit filteren bij de ploegzoektocht.
+_JUNK = _re.compile(
+    r"\((W|F)\)"
+    r"|\b(U1[5-9]|U2[0-3]|Youth|Reserves?|Women|Fem(enino|inin\w*)?)\b"
+    r"|^Jong\b| B$| II$| C$",
+    _re.IGNORECASE,
+)
+
+
 def zoek_team(naam: str) -> list[dict]:
-    """FotMob-ploegen die bij ``naam`` passen: [{id, naam, competitie}]."""
+    """FotMob-ploegen die bij ``naam`` passen: [{id, naam, competitie}] (zonder jeugd/vrouwen)."""
     try:
         data = _get(f"{SEARCH}?term={urllib.parse.quote(naam)}", key="fotmob")
     except Exception:
@@ -120,12 +131,16 @@ def zoek_team(naam: str) -> list[dict]:
         for opt in blok.get("options", []):
             tekst = opt.get("text", "")
             tid = (opt.get("payload") or {}).get("id")
-            if "|" in tekst and tid:
-                uit.append({
-                    "id": int(tid),
-                    "naam": tekst.rsplit("|", 1)[0],
-                    "competitie": (opt.get("payload") or {}).get("leagueName", ""),
-                })
+            if "|" not in tekst or not tid:
+                continue
+            ploegnaam = tekst.rsplit("|", 1)[0]
+            if _JUNK.search(ploegnaam):
+                continue
+            uit.append({
+                "id": int(tid),
+                "naam": ploegnaam,
+                "competitie": (opt.get("payload") or {}).get("leagueName", ""),
+            })
     return uit
 
 
@@ -202,10 +217,12 @@ def fetch(vorige_hint: dict | None = None, ploeg: dict | None = None) -> dict:
     }
     if not TEAM:
         resultaat["reden"] = "geen FotMob-ploeg ingesteld"
+        resultaat["status"] = {"code": "leeg", "tekst": resultaat["reden"]}
         return resultaat
     ov = _team_overview(TEAM)
     if not ov:
-        resultaat["reden"] = "FotMob niet bereikbaar"
+        resultaat["reden"] = "FotMob niet bereikbaar of gaf geen data terug"
+        resultaat["status"] = {"code": "leeg", "tekst": resultaat["reden"]}
         return resultaat
 
     overview = ov.get("overview") or {}
@@ -244,4 +261,9 @@ def fetch(vorige_hint: dict | None = None, ploeg: dict | None = None) -> dict:
         if opp:
             resultaat["volgende"] = {"tegenstander_opstelling": opp}
 
+    if resultaat["beschikbaar"]:
+        resultaat["status"] = "ok"
+    else:
+        resultaat.setdefault("status", {"code": "leeg",
+                                        "tekst": "FotMob gaf geen opstelling met ratings terug"})
     return resultaat

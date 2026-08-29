@@ -772,4 +772,10 @@ def fetch(gekozen_event_id: str | None = None, ploeg: dict | None = None) -> dic
         )
         resultaat["voorbeschouwing"] = vb
 
+    heeft_uitslag = ((resultaat.get("vorige") or {}).get("thuis") or {}).get("score") is not None
+    if heeft_uitslag or resultaat.get("volgende") or resultaat.get("recente_matches"):
+        resultaat["status"] = "ok"
+    else:
+        resultaat["status"] = {"code": "leeg",
+                               "tekst": "Sofascore gaf geen wedstrijden terug voor deze ploeg"}
     return resultaat

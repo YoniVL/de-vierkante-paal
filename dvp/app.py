@@ -64,9 +64,21 @@ def _auto_afsluiter(srv) -> None:
             return
 
 
+class BronLeegError(Exception):
+    """De bron gaf wél antwoord, maar geen bruikbare gegevens (site mogelijk gewijzigd)."""
+
+
+def _controleer(blob: dict) -> None:
+    st = (blob or {}).get("status")
+    if st and st != "ok":
+        raise BronLeegError((st or {}).get("tekst") if isinstance(st, dict) else str(st))
+
+
 def _do_sofascore() -> None:
     gekozen = store.get_kv("settings:vorige_event")
-    store.set_kv("bron:sofascore", sofascore.fetch(gekozen, ploeg.actieve()))
+    data = sofascore.fetch(gekozen, ploeg.actieve())
+    store.set_kv("bron:sofascore", data)          # blob bewaren (toont partiële data)
+    _controleer(data)
 
 
 def _do_fotmob() -> None:
@@ -74,13 +86,16 @@ def _do_fotmob() -> None:
     hint = {"datum": vorige.get("datum"),
             "thuis": (vorige.get("thuis") or {}).get("naam"),
             "uit": (vorige.get("uit") or {}).get("naam")} if vorige.get("datum") else None
-    store.set_kv("bron:fotmob", fotmob.fetch(hint, ploeg.actieve()))
+    data = fotmob.fetch(hint, ploeg.actieve())
+    store.set_kv("bron:fotmob", data)
+    _controleer(data)
 
 
 def _do_transfermarkt() -> None:
     data = transfermarkt.fetch(ploeg=ploeg.actieve())
     store.set_kv("bron:transfermarkt", data)
     store.save_stat_snapshot(aggregate.snapshot_rijen(data), ploeg.sleutel())
+    _controleer(data)
 
 
 def _do_voorbeschouwing(*, forceer: bool = False) -> None:
@@ -97,7 +112,9 @@ def _do_voorbeschouwing(*, forceer: bool = False) -> None:
         if oud_uur < _MAX_CACHE_UUR and bestaand.get("tegenstander_id") == tegenstander.get("id"):
             return  # cache nog goed
     tm_spelers = [s["speler"] for s in (store.get_kv("bron:transfermarkt", {}) or {}).get("spelers", [])]
-    store.set_kv("bron:voorbeschouwing", preview.fetch(so, tm_spelers, ploeg.actieve()))
+    data = preview.fetch(so, tm_spelers, ploeg.actieve())
+    store.set_kv("bron:voorbeschouwing", data)
+    _controleer(data)
 
 
 # --- bron verversen --------------------------------------------------------
@@ -114,6 +131,10 @@ _STAP_LABEL = {"sofascore": "Sofascore", "transfermarkt": "Transfermarkt",
 def _foutmelding(naam: str, exc: Exception) -> dict:
     bron = _STAP_LABEL.get(naam, naam)
     detail = f"{type(exc).__name__}: {exc}"
+    if isinstance(exc, BronLeegError):
+        return {"kort": f"{bron} antwoordde wel, maar gaf geen bruikbare gegevens terug "
+                        f"— meestal betekent dit dat de site aangepast is.",
+                "detail": str(exc)}
     if isinstance(exc, (TimeoutError, ConnectionError, OSError)) or "timeout" in detail.lower() \
             or "connection" in detail.lower() or "resolve" in detail.lower():
         kort = f"{bron} was even niet bereikbaar. Controleer je internet en klik nog eens op verversen."
@@ -280,16 +301,83 @@ def _ploegen_in_competitie(ut: int) -> list[dict]:
     return sorted(ploegen, key=lambda p: (p["naam"] or "").lower())
 
 
+# Woorden die te vaak bij de verkeerde club matchen om alleen op te zoeken.
+_GENERIEK = {"royal", "royale", "koninklijke", "saint", "sainte", "sint", "santo",
+             "sporting", "athletic", "atletico", "club", "union", "real", "deportivo",
+             "racing", "sport", "sportive", "association", "fussball", "calcio"}
+
+# Genormaliseerde Sofascore-naam -> extra FotMob-zoekterm, voor clubs die FotMob
+# heel anders noemt. (sleutel = normaliseer(naam): kleine letters, geen leestekens)
+_FM_ZOEKALIAS = {
+    "sint truidense vv": "STVV",
+    "royale union saint gilloise": "Union St",
+    "fc internazionale": "Inter Milan",
+    "internazionale": "Inter Milan",
+}
+
+
+def _naam_varianten(naam: str) -> list[str]:
+    """Zoektermen van specifiek naar breed, om een ploeg toch te vinden."""
+    from .names import _CLUB_STOPWOORDEN, kernwoord, normaliseer
+
+    extra = _FM_ZOEKALIAS.get(normaliseer(naam))
+    woorden = normaliseer(naam).split()
+    zonder = [w for w in woorden if w not in _CLUB_STOPWOORDEN and len(w) > 2]
+    varianten = [naam, extra, " ".join(woorden[:2]), " ".join(woorden[:3]),
+                 " ".join(zonder), kernwoord(naam)]
+    # losse woorden alleen als ze onderscheidend genoeg zijn
+    varianten += sorted((w for w in zonder if w not in _GENERIEK and len(w) >= 4),
+                        key=len, reverse=True)
+    uit: list[str] = []
+    for v in varianten:
+        v = (v or "").strip()
+        if v and v.lower() not in {x.lower() for x in uit}:
+            uit.append(v)
+    return uit
+
+
+def _zoek_fotmob(naam: str) -> list[dict]:
+    """Alle FotMob-kandidaten over alle zoektermen samen (op id ontdubbeld)."""
+    gezien: dict[int, dict] = {}
+    for term in _naam_varianten(naam):
+        for o in fotmob.zoek_team(term):
+            gezien.setdefault(o["id"], o)
+    return list(gezien.values())
+
+
 def _resolveer_ploeg(ut: int, sofascore_id: int, naam: str) -> dict:
     """Zoek de FotMob- en Transfermarkt-tegenhangers van een Sofascore-ploeg."""
-    from .names import clubs_gelijk, kernwoord
+    from .names import normaliseer
 
     comp = competities.by_ut(ut) or {}
-    fm_opties = fotmob.zoek_team(naam) or fotmob.zoek_team(kernwoord(naam))
-    fm_beste = next(
-        (o for o in fm_opties if clubs_gelijk(o.get("competitie", ""), comp.get("naam", ""))),
-        fm_opties[0] if fm_opties else None,
-    )
+    comp_woorden = set(normaliseer(
+        (comp.get("fotmob_comp") or "") + " " + comp.get("naam", "") + " " + comp.get("land", "")
+    ).split()) - {"league", "liga", "division", "eerste", "hoogste", "klasse"}
+    naam_woorden = set(normaliseer(naam).split())
+
+    def _comp_overlap(o):
+        return bool(set(normaliseer(o.get("competitie", "")).split()) & comp_woorden)
+
+    def _naam_overlap(o):
+        return len(set(normaliseer(o.get("naam", "")).split()) & naam_woorden)
+
+    alias = _FM_ZOEKALIAS.get(normaliseer(naam))
+    alias_treffers = fotmob.zoek_team(alias) if alias else []
+    fm_opties = _zoek_fotmob(naam)
+    for o in alias_treffers:                       # aliastreffers vooraan de keuzelijst
+        if o["id"] not in {x["id"] for x in fm_opties}:
+            fm_opties.insert(0, o)
+
+    if alias:
+        # handmatige alias -> de eerste kandidaat in de juiste competitie is betrouwbaar
+        fm_beste = next((o for o in alias_treffers if _comp_overlap(o)), None)
+    else:
+        kandidaten = sorted((o for o in fm_opties if _comp_overlap(o)),
+                            key=_naam_overlap, reverse=True)
+        fm_beste = kandidaten[0] if kandidaten and _naam_overlap(kandidaten[0]) else None
+        if fm_beste is None and len(fm_opties) == 1 and _naam_overlap(fm_opties[0]):
+            fm_beste = fm_opties[0]
+
     tm = transfermarkt.zoek_club(naam, comp.get("naam"))
     return {
         "naam": naam,

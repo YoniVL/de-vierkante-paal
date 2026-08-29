@@ -49,6 +49,7 @@ def fetch(sofascore_blob: dict, antwerp_squad: list[str], ploeg: dict | None = N
         "tegenstander_naam": naam,
         "uitval": None,
         "connecties": None,
+        "status": "ok",   # geen tegenstander = niks te doen, geen fout
     }
     if not naam:
         return out
@@ -76,4 +77,7 @@ def fetch(sofascore_blob: dict, antwerp_squad: list[str], ploeg: dict | None = N
     except Exception:
         pass
 
+    if out["connecties"] is None and out["uitval"] is None:
+        out["status"] = {"code": "leeg",
+                         "tekst": f"kon geen Transfermarkt-gegevens ophalen voor {naam}"}
     return out

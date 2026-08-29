@@ -205,6 +205,28 @@ def _diagnose(overzicht: dict) -> dict:
     }
 
 
+def _bron_status() -> dict:
+    """Per bron: 'ok' | 'verouderd' (>8u) | 'leeg' (nooit) | 'fout'."""
+    import datetime as _dt
+
+    fouten = store.get_kv("fouten", {}) or {}
+    uit: dict[str, str] = {}
+    for naam in ("sofascore", "transfermarkt", "fotmob", "voorbeschouwing"):
+        if naam in fouten:
+            uit[naam] = "fout"
+            continue
+        ts = store.get_kv_updated(f"bron:{naam}")
+        if not ts:
+            uit[naam] = "leeg"
+            continue
+        try:
+            oud = (_dt.datetime.now() - _dt.datetime.fromisoformat(ts)).total_seconds()
+        except ValueError:
+            oud = 0
+        uit[naam] = "verouderd" if oud > 8 * 3600 else "ok"
+    return uit
+
+
 def bouw_overzicht() -> dict:
     sofascore = store.get_kv("bron:sofascore", {})
     transfermarkt = store.get_kv("bron:transfermarkt", {})
@@ -236,6 +258,7 @@ def bouw_overzicht() -> dict:
             "fotmob": store.get_kv_updated("bron:fotmob"),
             "voorbeschouwing": store.get_kv_updated("bron:voorbeschouwing"),
         },
+        "bron_status": _bron_status(),
     }
     overzicht["diagnose"] = _diagnose(overzicht)
     return overzicht

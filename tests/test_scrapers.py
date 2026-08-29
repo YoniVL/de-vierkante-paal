@@ -1,0 +1,118 @@
+"""Draait de scrapers tegen opgenomen responses (tests/fixtures/) en controleert
+dat de vorm van de data klopt. Faalt = een van de sites is waarschijnlijk gewijzigd
+of de parser is stuk.  Vernieuw de fixtures met  py tests/opnemen.py .
+"""
+
+from __future__ import annotations
+
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from dvp import aggregate, config, store  # noqa: E402
+from dvp.sources import fotmob, preview, sofascore, transfermarkt  # noqa: E402
+from tests.nep_http import NepHttp  # noqa: E402
+from tests.opnemen import SCENARIOS  # noqa: E402
+
+
+def _verse_db():
+    tmp = Path(tempfile.mkdtemp(prefix="dvp_test_"))
+    config.DATA_DIR = tmp
+    config.DB_PATH = tmp / "test.sqlite"
+    store.init()
+
+
+class ScraperTests(unittest.TestCase):
+    scenario = "antwerp"
+
+    @classmethod
+    def setUpClass(cls):
+        _verse_db()
+        cls.ploeg = SCENARIOS[cls.scenario]
+        with NepHttp(cls.scenario):
+            cls.so = sofascore.fetch(None, cls.ploeg)
+            v = cls.so.get("vorige") or {}
+            hint = ({"datum": v.get("datum"),
+                     "thuis": (v.get("thuis") or {}).get("naam"),
+                     "uit": (v.get("uit") or {}).get("naam")}
+                    if v.get("datum") else None)
+            cls.fm = fotmob.fetch(hint, cls.ploeg)
+            cls.tm = transfermarkt.fetch(ploeg=cls.ploeg)
+            cls.pv = preview.fetch(cls.so, [s["speler"] for s in cls.tm["spelers"]], cls.ploeg)
+            store.set_kv("bron:sofascore", cls.so)
+            store.set_kv("bron:fotmob", cls.fm)
+            store.set_kv("bron:transfermarkt", cls.tm)
+            store.save_stat_snapshot(aggregate.snapshot_rijen(cls.tm), "ss" + str(cls.ploeg["sofascore_id"]))
+            store.set_kv("bron:voorbeschouwing", cls.pv)
+            cls.ov = aggregate.bouw_overzicht()
+
+    # --- Sofascore ---------------------------------------------------
+    def test_sofascore_vorige_match(self):
+        v = self.so["vorige"]
+        self.assertIsNotNone(v["thuis"]["score"])
+        self.assertIsNotNone(v["uit"]["score"])
+        self.assertGreaterEqual(len(v["opstelling"]), 10)   # spelers met minuten
+        self.assertTrue(any(s["rating"] for s in v["opstelling"]))
+
+    def test_sofascore_volgende_en_voorbeschouwing(self):
+        self.assertIn("volgende", self.so)
+        self.assertTrue(self.so["volgende"]["tegenstander"]["naam"])
+        vb = self.so["voorbeschouwing"]
+        self.assertGreaterEqual(len(vb["klassement"]), 14)
+        self.assertLessEqual(len(vb["klassement"]), 24)
+        self.assertTrue(any(r["antwerp"] for r in vb["klassement"]))
+        self.assertTrue(vb["topschutters"].get("goals"))
+
+    def test_sofascore_competitie_context(self):
+        c = self.so["competitie"]
+        self.assertEqual(c["ut"], self.ploeg["competitie"]["sofascore_ut"])
+        self.assertTrue(c["seizoen"])
+
+    # --- FotMob ----------------------------------------------------
+    def test_fotmob_beschikbaar_met_ratings(self):
+        self.assertTrue(self.fm["beschikbaar"])
+        self.assertTrue(self.fm.get("ratings_antwerp"))
+
+    # --- Transfermarkt -------------------------------------------
+    def test_transfermarkt_spelers(self):
+        sp = self.tm["spelers"]
+        self.assertGreaterEqual(len(sp), 18)
+        met_min = [s for s in sp if s["minuten"] > 0]
+        self.assertTrue(met_min)
+        for s in met_min:
+            self.assertGreaterEqual(s["wedstrijden"], 1)
+            self.assertLessEqual(s["goals"], s["wedstrijden"] + 5)
+            self.assertGreaterEqual(s["minuten"], s["wedstrijden"])  # min ≥ apps (elk ≥ 1')
+
+    def test_transfermarkt_uitval_vorm(self):
+        u = self.tm["uitval"]
+        self.assertIn("geblesseerd", u)
+        self.assertIn("geschorst", u)
+
+    # --- Preview / connecties ------------------------------------
+    def test_preview(self):
+        self.assertTrue(self.pv["tegenstander_naam"])
+        self.assertIsNotNone(self.pv["connecties"])
+
+    # --- Aggregatie ---------------------------------------------
+    def test_bouw_overzicht(self):
+        o = self.ov
+        self.assertGreaterEqual(len(o["scoretabel"]), 10)
+        self.assertGreaterEqual(len(o["stattabel"]), 18)
+        self.assertTrue(o["opstellingen"]["vorige_antwerp"])
+        # minstens de helft van de scoretabel heeft een TM-profiel-link
+        met_link = [r for r in o["scoretabel"] if r.get("profiel_url")]
+        self.assertGreaterEqual(len(met_link), len(o["scoretabel"]) // 2)
+        self.assertIn("diagnose", o)
+
+
+class ScraperTestsArsenal(ScraperTests):
+    scenario = "arsenal"
+
+
+if __name__ == "__main__":
+    unittest.main()

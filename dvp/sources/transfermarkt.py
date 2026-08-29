@@ -23,6 +23,34 @@ def _getal(tekst: str) -> int:
     return int(cijfers) if cijfers else 0
 
 
+# Transfermarkt-sorteersleutels in de kolomkoppen -> ons veld. Deze sleutels
+# staan in de href van de sorteerlinks en zijn taal-onafhankelijk en stabiel.
+_KOLOM_SLEUTELS = {
+    "einsaetze": "wedstrijden",
+    "tore": "goals",
+    "vorlagen": "assists",
+    "gelbe": "geel",
+    "gelbrote": "tweede_geel",
+    "rote": "rood",
+    "einsatzzeit": "minuten",
+    "pps": "ppg",
+}
+
+
+def _kolom_index(tabel) -> dict[str, int]:
+    """{onze-veldnaam: kolomindex} afgeleid uit de sorteerlinks in de tabelkop."""
+    uit: dict[str, int] = {}
+    koppen = tabel.select("thead th")
+    for idx, th in enumerate(koppen):
+        a = th.select_one('a[href*="/sort/"]')
+        if not a:
+            continue
+        m = re.search(r"/sort/([a-z_]+)", a.get("href", ""))
+        if m and m.group(1) in _KOLOM_SLEUTELS:
+            uit[_KOLOM_SLEUTELS[m.group(1)]] = idx
+    return uit
+
+
 def _leistungsdaten_url(club_id: int, club_slug: str, seizoen: int) -> str:
     # reldata/%26<jaar>  ->  '&' + jaar  =  alle competities, dat seizoen
     return (
@@ -40,11 +68,26 @@ def fetch(seizoen: int | None = None, ploeg: dict | None = None) -> dict:
             "opgehaald_op": _dt.datetime.now().isoformat(timespec="seconds"),
             "seizoen": f"{seizoen}/{str(seizoen + 1)[-2:]}", "bron_url": None,
             "spelers": [], "uitval": {"geblesseerd": [], "geschorst": []},
+            "status": {"code": "leeg", "tekst": "geen Transfermarkt-club ingesteld"},
         }
     url = _leistungsdaten_url(club_id, club_slug, seizoen)
     html = get_html(url, key="transfermarkt")
     soup = BeautifulSoup(html, "html.parser")
     tabel = soup.select_one("table.items")
+
+    # Kolommen bij voorkeur op kop lezen; anders terugvallen op vaste posities
+    # vanaf het einde ([-10]=wedstrijden … [-1]=minuten).
+    kol = _kolom_index(tabel) if tabel else {}
+    op_kop = len(kol) >= 5
+    _POS = {"wedstrijden": -10, "goals": -9, "assists": -8, "geel": -7,
+            "tweede_geel": -6, "rood": -5, "ppg": -2, "minuten": -1}
+
+    def _cel(waarden: list[str], veld: str) -> str:
+        idx = kol.get(veld) if op_kop else _POS[veld]
+        try:
+            return waarden[idx]
+        except (IndexError, TypeError):
+            return ""
 
     spelers: list[dict] = []
     if tabel:
@@ -56,25 +99,23 @@ def fetch(seizoen: int | None = None, ploeg: dict | None = None) -> dict:
             naam = naam_link.get_text(strip=True)
             profiel = naam_link.get("href", "")
             speler_id_match = re.search(r"/spieler/(\d+)", profiel)
-            # De laatste kolommen liggen vast, ongeacht hoeveel naam-cellen ervoor staan:
-            #  [-1]=minuten [-2]=PPG [-3]=wissels uit [-4]=wissels in
-            #  [-5]=rood [-6]=2e geel [-7]=geel [-8]=assists [-9]=goals [-10]=wedstrijden
             waarden = [td.get_text(strip=True) for td in tds]
-            tweede_geel = _getal(waarden[-6])
-            rood = _getal(waarden[-5])
+            tweede_geel = _getal(_cel(waarden, "tweede_geel"))
+            rood = _getal(_cel(waarden, "rood"))
+            ppg = _cel(waarden, "ppg")
             spelers.append(
                 {
                     "speler": naam,
                     "tm_id": speler_id_match.group(1) if speler_id_match else None,
                     "profiel_url": BASE + profiel if profiel.startswith("/") else profiel,
-                    "wedstrijden": _getal(waarden[-10]),
-                    "goals": _getal(waarden[-9]),
-                    "assists": _getal(waarden[-8]),
-                    "geel": _getal(waarden[-7]),
+                    "wedstrijden": _getal(_cel(waarden, "wedstrijden")),
+                    "goals": _getal(_cel(waarden, "goals")),
+                    "assists": _getal(_cel(waarden, "assists")),
+                    "geel": _getal(_cel(waarden, "geel")),
                     "tweede_geel": tweede_geel,
                     "rood": rood + tweede_geel,  # totaal rood (direct + 2e geel)
-                    "minuten": _getal(waarden[-1]),
-                    "ppg": waarden[-2] if waarden[-2] not in ("-", "") else None,
+                    "minuten": _getal(_cel(waarden, "minuten")),
+                    "ppg": ppg if ppg not in ("-", "") else None,
                 }
             )
 
@@ -84,6 +125,8 @@ def fetch(seizoen: int | None = None, ploeg: dict | None = None) -> dict:
         "bron_url": url,
         "spelers": spelers,
         "uitval": blessures_schorsingen(club_id, club_slug),
+        "status": "ok" if spelers else {
+            "code": "leeg", "tekst": "Transfermarkt gaf geen spelers in de statistiektabel terug"},
     }
 
 
