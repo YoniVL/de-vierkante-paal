@@ -11,10 +11,14 @@
 #  en iexpress.exe (staat standaard in C:\Windows\System32).
 # =====================================================================
 param(
+    [ValidateSet('dvp', 'generiek')]
+    [string]$Variant = 'dvp',
     [string]$PythonZip = '',
     [string]$Uit = ''
 )
 $ErrorActionPreference = 'Stop'
+
+$APPNAAM = if ($Variant -eq 'generiek') { 'Aftrap' } else { 'De Vierkante Paal' }
 
 $PYVER = '3.12.8'
 $PYURL = "https://www.python.org/ftp/python/$PYVER/python-$PYVER-embed-amd64.zip"
@@ -79,11 +83,17 @@ $dst = Join-Path $payload 'dvp'
 robocopy (Join-Path $proj 'dvp') $dst /E /XD __pycache__ /XF '*.pyc' /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw 'robocopy is mislukt' }
 
-# --- 5. versie.txt + uninstall.ps1 ----------------------------
-Stap '5/9  versie.txt + uninstall.ps1'
+# --- 5. versie.txt + uninstall.ps1 + merk (variant) ----------
+Stap "5/9  versie.txt + variant ($Variant)"
 $versie = Get-Date -Format 'yyyy.MM.dd'
 Set-Content -Path (Join-Path $payload 'versie.txt') -Value $versie -Encoding ASCII
 Copy-Item (Join-Path $inst 'uninstall.ps1') (Join-Path $payload 'uninstall.ps1')
+if ($Variant -eq 'generiek') {
+    '{ "app_naam": "Aftrap", "toon_kiezer": true, "vaste_ploeg": null }' |
+        Set-Content -Path (Join-Path $payload 'merk.json') -Encoding ASCII
+    Copy-Item (Join-Path $inst 'assets\aftrap-logo.png') (Join-Path $dst 'static\logo.png') -Force
+    Write-Host "  merk.json + Aftrap-logo"
+}
 Write-Host "  versie $versie"
 
 # --- 6. logo.ico genereren met de gebouwde Python -------------
@@ -103,7 +113,7 @@ Stap '7/9  Pakket inpakken'
 $zip = Join-Path $build 'dvp-pakket.zip'
 [System.IO.Compression.ZipFile]::CreateFromDirectory(
     $payload, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
-$logoPng = Join-Path $proj 'dvp\static\logo.png'
+$logoPng = Join-Path $dst 'static\logo.png'   # in de payload (evt. het Aftrap-logo)
 $logoIco = Join-Path $dst 'static\logo.ico'
 $zipMB = [math]::Round((Get-Item $zip).Length / 1MB, 1)
 Write-Host "  dvp-pakket.zip = $zipMB MB"
@@ -116,7 +126,7 @@ Stap '8/9  Zelf-uitpakker compileren'
 $csc = Get-ChildItem "$env:windir\Microsoft.NET\Framework64\v*\csc.exe" |
     Sort-Object FullName -Descending | Select-Object -First 1
 if (-not $csc) { throw 'csc.exe (.NET Framework 4) niet gevonden' }
-$exe = Join-Path $Uit 'Installeer De Vierkante Paal.exe'
+$exe = Join-Path $Uit "Installeer $APPNAAM.exe"
 if (Test-Path $exe) { Remove-Item $exe -Force }
 $cscArgs = @(
     '/nologo', '/target:winexe', '/platform:anycpu', '/optimize+',
@@ -133,9 +143,10 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path $exe)) { throw 'compileren van de st
 
 # --- 9. afronden --------------------------------------------
 Stap '9/9  Afronden'
-Copy-Item (Join-Path $inst 'LEESMIJ-redactie.txt') $Uit -Force
+if ($Variant -eq 'dvp') {
+    Copy-Item (Join-Path $inst 'LEESMIJ-redactie.txt') $Uit -Force
+}
 $exeMB = [math]::Round((Get-Item $exe).Length / 1MB, 1)
 
 Write-Host "`nKLAAR." -ForegroundColor Green
 Write-Host "Deelbestand: $exe  ($exeMB MB)"
-Write-Host "Deel dit met de redactieleden (samen met installer\LEESMIJ-redactie.txt)."

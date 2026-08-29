@@ -9,12 +9,34 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
-$APPNAAM   = 'De Vierkante Paal'
 $PORT      = 8756
 $HIER      = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ZIP       = Join-Path $HIER 'dvp-pakket.zip'
 $LOGO      = Join-Path $HIER 'logo.png'
-$REGKEY    = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\DeVierkantePaal'
+
+# App-naam + versie uit het pakket lezen (merk.json / versie.txt in de zip)
+$APPNAAM = 'De Vierkante Paal'
+$script:versieNieuw = ''
+if (Test-Path $ZIP) {
+    try {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $z = [System.IO.Compression.ZipFile]::OpenRead($ZIP)
+        foreach ($naam in 'merk.json', 'versie.txt') {
+            $e = $z.Entries | Where-Object { $_.FullName -eq $naam } | Select-Object -First 1
+            if (-not $e) { continue }
+            $sr = New-Object System.IO.StreamReader($e.Open())
+            $inhoud = $sr.ReadToEnd(); $sr.Close()
+            if ($naam -eq 'merk.json') {
+                try { $m = $inhoud | ConvertFrom-Json; if ($m.app_naam) { $APPNAAM = $m.app_naam } } catch { }
+            } else {
+                $script:versieNieuw = $inhoud.Trim()
+            }
+        }
+        $z.Dispose()
+    } catch { }
+}
+$REGID  = ($APPNAAM -replace '[^A-Za-z0-9]', '')
+$REGKEY = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$REGID"
 
 # --- kleuren -------------------------------------------------------------
 $cBg    = [System.Drawing.Color]::FromArgb(14, 16, 20)
@@ -58,20 +80,6 @@ function Is-BeschermdePad([string]$map) {
     return ($m.StartsWith($env:windir.ToLower()) -or
             $m.StartsWith(([Environment]::GetFolderPath('ProgramFiles')).ToLower()) -or
             $m.StartsWith(([Environment]::GetFolderPath('ProgramFilesX86')).ToLower()))
-}
-
-$script:versieNieuw = ''
-if (Test-Path $ZIP) {
-    try {
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        $z = [System.IO.Compression.ZipFile]::OpenRead($ZIP)
-        $e = $z.Entries | Where-Object { $_.FullName -eq 'versie.txt' } | Select-Object -First 1
-        if ($e) {
-            $sr = New-Object System.IO.StreamReader($e.Open())
-            $script:versieNieuw = $sr.ReadToEnd().Trim(); $sr.Close()
-        }
-        $z.Dispose()
-    } catch { }
 }
 
 # =====================================================================

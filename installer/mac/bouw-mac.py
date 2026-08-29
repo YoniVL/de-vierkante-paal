@@ -54,7 +54,8 @@ CACHE = INST.parent / "cache"
 BUILD = INST.parent / "build-mac"
 UIT = INST.parent / "uit"
 
-APPNAAM = "De Vierkante Paal"
+VARIANT = "generiek" if "--variant" in sys.argv and "generiek" in sys.argv else "dvp"
+APPNAAM = "Aftrap" if VARIANT == "generiek" else "De Vierkante Paal"
 BUNDLE = f"{APPNAAM}.app"
 VERSIE = date.today().strftime("%Y.%m.%d")
 
@@ -168,11 +169,15 @@ class MacZip:
         self.z.close()
 
 
-def add_tree(mz: MacZip, src: Path, arcbase: str) -> None:
+def add_tree(mz: MacZip, src: Path, arcbase: str, skip: set[str] | None = None) -> None:
+    skip = skip or set()
     for p in sorted(src.rglob("*")):
         if p.is_dir() or "__pycache__" in p.parts or p.suffix == ".pyc":
             continue
-        mz.file(f"{arcbase}/{p.relative_to(src).as_posix()}", p.read_bytes())
+        rel = p.relative_to(src).as_posix()
+        if rel in skip:
+            continue
+        mz.file(f"{arcbase}/{rel}", p.read_bytes())
 
 
 # Weglaten uit de ingebouwde Python: alles wat de tool niet nodig heeft
@@ -247,9 +252,11 @@ def main() -> None:
         pip_target(arch, d)
         sp[arch] = d
 
-    stap("3/5  App-icoon (logo.icns)")
+    stap(f"3/5  App-icoon (logo.icns)  [variant: {VARIANT}]")
     ensure_pillow()
-    icns = maak_icns(PROJ / "dvp" / "static" / "logo.png")
+    logo_png = (INST.parent / "assets" / "aftrap-logo.png") if VARIANT == "generiek" \
+        else (PROJ / "dvp" / "static" / "logo.png")
+    icns = maak_icns(logo_png)
 
     stap("4/5  De .app samenstellen")
     out = UIT / f"{APPNAAM} (Mac).zip"
@@ -265,7 +272,13 @@ def main() -> None:
     mz.file(f"{C}/Resources/logo.icns", icns)
     appdir = f"{C}/Resources/app"
     mz.file(f"{appdir}/versie.txt", VERSIE.encode("utf-8"))
-    add_tree(mz, PROJ / "dvp", f"{appdir}/dvp")
+    if VARIANT == "generiek":
+        mz.file(f"{appdir}/merk.json",
+                b'{ "app_naam": "Aftrap", "toon_kiezer": true, "vaste_ploeg": null }')
+        add_tree(mz, PROJ / "dvp", f"{appdir}/dvp", skip={"static/logo.png"})
+        mz.file(f"{appdir}/dvp/static/logo.png", logo_png.read_bytes())  # Aftrap-logo
+    else:
+        add_tree(mz, PROJ / "dvp", f"{appdir}/dvp")
     for arch in arches:
         print(f"  Python-{arch} inpakken ...")
         add_pbs(mz, tgz[arch], f"{appdir}/python-{arch}")

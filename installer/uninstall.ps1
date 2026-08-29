@@ -6,10 +6,15 @@
 $ErrorActionPreference = 'SilentlyContinue'
 Add-Type -AssemblyName System.Windows.Forms
 
-$APPNAAM = 'De Vierkante Paal'
 $PORT    = 8756
 $DOEL    = Split-Path -Parent $MyInvocation.MyCommand.Path
-$REGKEY  = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\DeVierkantePaal'
+
+$APPNAAM = 'De Vierkante Paal'
+try {
+    $m = Get-Content (Join-Path $DOEL 'merk.json') -Raw | ConvertFrom-Json
+    if ($m.app_naam) { $APPNAAM = $m.app_naam }
+} catch { }
+$REGKEY = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\' + ($APPNAAM -replace '[^A-Za-z0-9]', '')
 
 $antwoord = [System.Windows.Forms.MessageBox]::Show(
     "$APPNAAM verwijderen?`n`nMap: $DOEL",
