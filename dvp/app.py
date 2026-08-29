@@ -275,10 +275,10 @@ def _ploegen_in_competitie(ut: int) -> list[dict]:
 
 def _resolveer_ploeg(ut: int, sofascore_id: int, naam: str) -> dict:
     """Zoek de FotMob- en Transfermarkt-tegenhangers van een Sofascore-ploeg."""
-    from .names import clubs_gelijk
+    from .names import clubs_gelijk, kernwoord
 
     comp = competities.by_ut(ut) or {}
-    fm_opties = fotmob.zoek_team(naam)
+    fm_opties = fotmob.zoek_team(naam) or fotmob.zoek_team(kernwoord(naam))
     fm_beste = next(
         (o for o in fm_opties if clubs_gelijk(o.get("competitie", ""), comp.get("naam", ""))),
         fm_opties[0] if fm_opties else None,

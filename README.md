@@ -124,6 +124,28 @@ knop in de tool.
 > **Let op:** de Mac-build kan vanaf Windows niet getest worden. Laat iemand met
 > een Mac ze één keer proberen voor je ze breed verdeelt.
 
+### Generieke variant ("Aftrap") — zelf een ploeg kiezen
+
+Naast de vaste DVP-versie kan je uit dezelfde broncode een **generieke variant**
+bouwen waarin de gebruiker bij de eerste start zelf een ploeg kiest (uit de hoogste
+klasse van Engeland, Spanje, Duitsland, Italië, Frankrijk, Nederland, België en
+Portugal + de Engelse Championship en de Belgische Challenger Pro League).
+
+```bash
+powershell -ExecutionPolicy Bypass -File installer\bouw-installer.ps1 -Variant generiek
+py installer\mac\bouw-mac.py --variant generiek
+```
+
+Levert **`Installeer Aftrap.exe`** en **`Aftrap (Mac).zip`**. Bij de eerste start
+kiest de gebruiker competitie → ploeg, bevestigt de koppeling met Sofascore/FotMob/
+Transfermarkt, en de tool haalt de data op. Wisselen van ploeg kan bovenaan; de
+bewaarde afleveringen blijven per ploeg gescheiden.
+
+De verschillen tussen de twee varianten zitten volledig in **`merk.json`** (wordt door
+het build-script in het pakket gezet). Zonder `merk.json` = de DVP-versie. Beide
+kunnen naast elkaar geïnstalleerd staan, maar draaien op dezelfde poort 8756 — dus
+één tegelijk gebruiken.
+
 ## Gebruik per aflevering
 
 1. Klik **↻ Ververs alles**. Dat gebeurt nu **op de achtergrond** — je ziet bovenaan een
@@ -159,6 +181,8 @@ De **opstellingen op het veld komen van Sofascore** (standaard); FotMob wordt en
 als terugval en voor de FotMob-rating in de scoretabel. De interface is donker ("dark mode").
 
 Instellingen (club-id's, seizoen, speler-aliassen) staan in `dvp/config.py`.
+De 10 competities voor de generieke variant staan in `dvp/competities.py`;
+welke variant er draait wordt bepaald door `dvp/merk.py` (leest `merk.json`).
 
 ## Mappen
 
@@ -171,7 +195,8 @@ installer/                installatieprogramma om te delen met redactieleden
   uninstall.ps1           verwijderscript (komt mee in de installatie)
   sfx.cs                  zelf-uitpakkende stub (wordt gecompileerd)
   LEESMIJ-redactie.txt    korte uitleg voor de redactieleden
-  mac/bouw-mac.py         maakt "De Vierkante Paal (Mac).zip" (op Windows)
+  assets/aftrap-logo.png  logo voor de generieke variant ("Aftrap")
+  mac/bouw-mac.py         maakt de Mac-.zip (op Windows) — -Variant / --variant
   mac/LEESMIJ-mac.txt     korte uitleg voor de Mac-gebruikers
 dvp/                      de tool
   config.py               instellingen om aan te passen
