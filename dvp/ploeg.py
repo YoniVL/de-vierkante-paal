@@ -2,10 +2,13 @@
 
 DVP-variant: altijd Antwerp (uit ``config.py``).
 Generieke variant: wat de gebruiker koos, bewaard in de kv-store
-(``settings:actieve_ploeg``), met een lijst favorieten om snel te wisselen.
+(``settings:actieve_ploeg``), met een lijst ploegen om snel te wisselen
+(``settings:ploegen``): een paar vastgeprikt + de recent gebruikte.
 """
 
 from __future__ import annotations
+
+import datetime as _dt
 
 from . import config, merk, store
 
@@ -23,6 +26,8 @@ _CACHE_SLEUTELS = (
     "bron:sofascore", "bron:fotmob", "bron:transfermarkt", "bron:voorbeschouwing",
     "settings:vorige_event", "fouten",
 )
+
+_MAX_RECENT = 8
 
 
 def _standaard() -> dict:
@@ -44,15 +49,63 @@ def sleutel(ploeg: dict | None = None) -> str:
     return f"ss{p['sofascore_id']}"
 
 
-def favorieten() -> list[dict]:
-    return store.get_kv("settings:favorieten", []) or []
+# --- de opgeslagen ploegenlijst -------------------------------------------
+def ploegen() -> list[dict]:
+    """De ruwe opgeslagen lijst (met migratie van de oude 'favorieten')."""
+    lst = store.get_kv("settings:ploegen")
+    if lst is None:
+        oud = store.get_kv("settings:favorieten", []) or []
+        lst = [{**p, "vast": False, "laatst": ""} for p in oud]
+        if lst:
+            store.set_kv("settings:ploegen", lst)
+    return lst or []
 
 
+def _bewaar(lst: list[dict]) -> None:
+    store.set_kv("settings:ploegen", lst)
+
+
+def lijst() -> list[dict]:
+    """Voor de weergave: vastgeprikte eerst, dan recent (op datum), recent tot 8."""
+    alle = ploegen()
+    vast = [p for p in alle if p.get("vast")]
+    los = sorted((p for p in alle if not p.get("vast")),
+                 key=lambda p: p.get("laatst") or "", reverse=True)
+    return vast + los[:_MAX_RECENT]
+
+
+def bekend(sofascore_id: int) -> dict | None:
+    """De opgeslagen (al gekoppelde) ploeg met dit Sofascore-id, of None."""
+    for p in ploegen():
+        if p.get("sofascore_id") == sofascore_id:
+            return p
+    return None
+
+
+def prik(sofascore_id: int, vast: bool) -> None:
+    lst = ploegen()
+    for p in lst:
+        if p.get("sofascore_id") == sofascore_id:
+            p["vast"] = bool(vast)
+    _bewaar(lst)
+
+
+def verwijder(sofascore_id: int) -> None:
+    if sofascore_id == actieve().get("sofascore_id"):
+        return
+    _bewaar([p for p in ploegen() if p.get("sofascore_id") != sofascore_id])
+
+
+# --- wisselen ------------------------------------------------------------
 def zet_actief(ploeg: dict, *, ververs: bool = True) -> None:
+    nu = _dt.datetime.now().isoformat(timespec="seconds")
+    lst = ploegen()
+    bestaand = next((p for p in lst if p.get("sofascore_id") == ploeg["sofascore_id"]), None)
+    entry = {**ploeg, "vast": bool(bestaand and bestaand.get("vast")), "laatst": nu}
+    lst = [p for p in lst if p.get("sofascore_id") != ploeg["sofascore_id"]]
+    lst.insert(0, entry)
+    _bewaar(lst)
     store.set_kv("settings:actieve_ploeg", ploeg)
-    favs = [f for f in favorieten() if f.get("sofascore_id") != ploeg["sofascore_id"]]
-    favs.insert(0, ploeg)
-    store.set_kv("settings:favorieten", favs[:12])
     if ververs:
         wis_caches()
 

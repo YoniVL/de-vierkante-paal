@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import urllib.parse
 
-from . import config, ploeg, store
+from . import config, merk, ploeg, store
 from .names import NaamKoppelaar, normaliseer
 
 
@@ -21,7 +21,9 @@ def _aliassen() -> dict:
     return store.get_kv("aliassen", {}) or {}
 
 
-def _whoscored_link() -> str:
+def _whoscored_link() -> str | None:
+    if not merk.toon_whoscored():
+        return None
     vast = getattr(config, "WHOSCORED_TEAM_URL", "")
     if vast and not ploeg.is_gekozen():
         return vast
@@ -36,6 +38,7 @@ def bouw_scoretabel(sofascore: dict, fotmob: dict, event_id: str | None) -> list
 
     fm_ratings = (fotmob or {}).get("ratings_antwerp") or {}
     fm_koppelaar = NaamKoppelaar(list(fm_ratings), _aliassen()) if fm_ratings else None
+    met_whoscored = merk.toon_whoscored()
 
     rijen: list[dict] = []
     for sp in opstelling:
@@ -46,7 +49,7 @@ def bouw_scoretabel(sofascore: dict, fotmob: dict, event_id: str | None) -> list
             match = fm_koppelaar.koppel(sp["naam"])
             if match:
                 fm = fm_ratings[match]
-        ws = handmatig.get((key, "whoscored"))
+        ws = handmatig.get((key, "whoscored")) if met_whoscored else None
         rijen.append(
             {
                 "speler": sp["naam"],

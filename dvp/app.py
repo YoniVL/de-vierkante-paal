@@ -204,6 +204,7 @@ def _afleveringen_map() -> str:
 def _render_index() -> bytes:
     overzicht = aggregate.bouw_overzicht()
     actief = ploeg.actieve()
+    lijst = ploeg.lijst()
     context = {
         "o": overzicht,
         "fouten": store.get_kv("fouten", {}),
@@ -214,8 +215,11 @@ def _render_index() -> bytes:
         "eigen_naam": actief.get("naam") or config.CLUB_NAAM,
         "app_naam": merk.app_naam(),
         "toon_kiezer": merk.toon_kiezer(),
+        "toon_whoscored": merk.toon_whoscored(),
         "actieve_ploeg": actief,
-        "favorieten": ploeg.favorieten(),
+        "vastgeprikt": [p for p in lijst if p.get("vast")],
+        "recent": [p for p in lijst if not p.get("vast")],
+        "competities": competities.COMPETITIES,
         "competitie_naam": (actief.get("competitie") or {}).get("naam", ""),
         "versie": config.versie(),
         "blijf_draaien": bool(store.get_kv("settings:blijf_draaien", False)),
@@ -226,19 +230,22 @@ def _render_index() -> bytes:
     return _env.get_template("overview.html").render(**context).encode("utf-8")
 
 
-def _render_kies_ploeg() -> bytes:
+def _render_kies_ploeg(voorinvul: dict | None = None) -> bytes:
     return _env.get_template("kies_ploeg.html").render(
         app_naam=merk.app_naam(),
         competities=competities.COMPETITIES,
         actieve_ploeg=ploeg.actieve() if ploeg.is_gekozen() else None,
+        voorinvul=voorinvul,
     ).encode("utf-8")
 
 
 def _render_instellingen() -> bytes:
+    lijst = ploeg.lijst()
     return _env.get_template("instellingen.html").render(
         app_naam=merk.app_naam(),
         actieve_ploeg=ploeg.actieve(),
-        favorieten=ploeg.favorieten(),
+        vastgeprikt=[p for p in lijst if p.get("vast")],
+        recent=[p for p in lijst if not p.get("vast")],
         toon_kiezer=merk.toon_kiezer(),
         versie=config.versie(),
     ).encode("utf-8")
@@ -319,7 +326,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _body(self) -> dict[str, list[str]]:
         lengte = int(self.headers.get("Content-Length", 0) or 0)
-        ruw = self.rfile.read(lengte).decode("utf-8") if lengte else ""
+        ruw = self.rfile.read(lengte).decode("utf-8", "replace") if lengte else ""
         return parse_qs(ruw, keep_blank_values=True)
 
     def do_GET(self):  # noqa: N802
@@ -331,7 +338,12 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self._stuur(_render_index())
             elif pad == "/kies-ploeg":
-                self._stuur(_render_kies_ploeg())
+                qs = parse_qs(urlparse(self.path).query)
+                vi = None
+                if qs.get("ut") and qs.get("sofascore_id") and qs.get("naam"):
+                    vi = {"ut": qs["ut"][0], "sofascore_id": qs["sofascore_id"][0],
+                          "naam": qs["naam"][0]}
+                self._stuur(_render_kies_ploeg(vi))
             elif pad == "/instellingen":
                 self._stuur(_render_instellingen())
             elif pad == "/api/ploegen":
@@ -449,23 +461,31 @@ class Handler(BaseHTTPRequestHandler):
                 _start_ververs("all")
                 self._redirect("/")
             elif pad == "/wissel-ploeg":
-                if (form.get("naar") or [""])[0] == "kiezer":
-                    self._redirect("/kies-ploeg")
-                else:
-                    idx = int((form.get("index") or ["0"])[0])
-                    favs = ploeg.favorieten()
-                    if 0 <= idx < len(favs):
-                        ploeg.zet_actief(favs[idx])
-                        _start_ververs("all")
+                sid = int((form.get("sofascore_id") or ["0"])[0] or 0)
+                if sid and sid == ploeg.actieve().get("sofascore_id"):
                     self._redirect("/")
-            elif pad == "/favoriet":
-                idx = int((form.get("index") or ["-1"])[0])
-                favs = ploeg.favorieten()
-                if (form.get("actie") or [""])[0] == "weg" and 0 <= idx < len(favs):
-                    verwijderd = favs.pop(idx)
-                    if verwijderd.get("sofascore_id") != ploeg.actieve().get("sofascore_id"):
-                        store.set_kv("settings:favorieten", favs)
-                self._redirect("/instellingen")
+                    return
+                bekend = ploeg.bekend(sid) if sid else None
+                if bekend:
+                    ploeg.zet_actief(bekend)
+                    _start_ververs("all")
+                    self._redirect("/")
+                elif sid and (form.get("ut") or [""])[0]:
+                    from urllib.parse import urlencode
+                    q = urlencode({"ut": (form.get("ut") or [""])[0], "sofascore_id": sid,
+                                   "naam": (form.get("naam") or [""])[0]})
+                    self._redirect("/kies-ploeg?" + q)
+                else:
+                    self._redirect("/kies-ploeg")
+            elif pad == "/prik-ploeg":
+                sid = int((form.get("sofascore_id") or ["0"])[0] or 0)
+                actie = (form.get("actie") or ["vast"])[0]
+                if sid and actie == "weg":
+                    ploeg.verwijder(sid)
+                elif sid:
+                    ploeg.prik(sid, actie == "vast")
+                terug = self.headers.get("Referer") or "/"
+                self._redirect("/instellingen" if "/instellingen" in terug else "/")
             elif pad == "/kies-match":
                 keuze = (form.get("event_id") or [""])[0].strip()
                 store.set_kv("settings:vorige_event", keuze if keuze and keuze != "auto" else None)

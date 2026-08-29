@@ -27,8 +27,35 @@
   header h1{font-size:16px;margin:0;font-weight:700;color:var(--inkt)}
   header .club{color:var(--rood);font-weight:700}
   header .nu{color:var(--grijs);font-size:12.5px;margin-left:auto}
-  header .ploegwissel select{background:var(--vlak-2);color:var(--inkt);border:1px solid var(--lijn);
-       border-radius:7px;padding:5px 9px;font:inherit;font-size:13px;max-width:260px}
+  header .pk{position:relative}
+  header .pk-knop{background:var(--vlak-2);color:var(--inkt);border:1px solid var(--lijn);
+       border-radius:8px;padding:6px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+  header .pk-knop:hover{border-color:var(--rood)}
+  header .pk-pijl{color:var(--grijs);font-size:11px}
+  header .pk-paneel{position:absolute;top:calc(100% + 6px);left:0;z-index:50;min-width:280px;
+       background:var(--vlak);border:1px solid var(--lijn);border-radius:10px;padding:6px;
+       box-shadow:0 12px 32px rgba(0,0,0,.5)}
+  header .pk-kop{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--grijs);
+       font-weight:700;padding:8px 8px 4px}
+  header .pk-rij{display:flex;align-items:center;gap:4px;border-radius:7px}
+  header .pk-rij:hover{background:var(--vlak-2)}
+  header .pk-rij.actief{background:var(--ant-bg)}
+  header .pk-wissel{flex:1;margin:0}
+  header .pk-wissel button{width:100%;text-align:left;background:none;border:0;color:var(--inkt);
+       font:inherit;font-size:13px;padding:7px 8px;cursor:pointer}
+  header .pk-rij.actief .pk-wissel button{color:var(--rood);font-weight:700}
+  header .pk-comp{color:var(--grijs);font-size:11.5px}
+  header .pk-prik{margin:0}
+  header .pk-prik button{background:none;border:0;cursor:pointer;font-size:13px;padding:6px;
+       opacity:.3;filter:grayscale(1)}
+  header .pk-prik button:hover{opacity:.7}
+  header .pk-prik.aan button{opacity:1;filter:none}
+  header .pk-nieuw{display:flex;flex-wrap:wrap;gap:5px;padding:6px 8px 8px}
+  header .pk-nieuw select{background:var(--vlak-2);color:var(--inkt);border:1px solid var(--lijn);
+       border-radius:6px;padding:5px 7px;font:inherit;font-size:12.5px;max-width:150px}
+  header .pk-nieuw button{background:var(--rood);color:#12151a;border:0;border-radius:6px;
+       padding:5px 12px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  header .pk-nieuw button:disabled{opacity:.4;cursor:default}
 
   main{max-width:1080px;margin:0 auto;padding:20px}
   section{background:var(--vlak);border:1px solid var(--lijn);border-radius:12px;padding:20px 22px;margin-bottom:16px}
@@ -226,19 +253,49 @@
 <header>
   <div class="inner">
     <img class="logo" src="/static/logo.png" alt="{{ app_naam }}">
-    <h1>{{ app_naam }} &nbsp;·&nbsp; <span class="club">{{ club }}</span></h1>
+    <h1>{{ app_naam }}{% if not toon_kiezer %} &nbsp;·&nbsp; <span class="club">{{ club }}</span>{% endif %}</h1>
     {% if toon_kiezer %}
-    <form method="post" action="/wissel-ploeg" class="ploegwissel">
-      <select name="index" onchange="if(this.value=='kiezer'){this.form.naar.value='kiezer'}this.form.submit()">
-        {% for f in favorieten %}
-          <option value="{{ loop.index0 }}" {{ 'selected' if f.sofascore_id == actieve_ploeg.sofascore_id }}>
-            {{ f.naam }}{% if f.competitie and f.competitie.naam %} · {{ f.competitie.naam }}{% endif %}
-          </option>
-        {% endfor %}
-        <option value="kiezer">+ andere ploeg kiezen…</option>
-      </select>
-      <input type="hidden" name="naar" value="">
-    </form>
+    <div class="pk" id="pk">
+      <button type="button" class="pk-knop" id="pk-knop" aria-expanded="false">
+        {{ actieve_ploeg.naam }} <span class="pk-pijl">▾</span>
+      </button>
+      <div class="pk-paneel" id="pk-paneel" hidden>
+        {% macro pkrij(f) %}
+          <div class="pk-rij{{ ' actief' if f.sofascore_id == actieve_ploeg.sofascore_id }}">
+            <form method="post" action="/wissel-ploeg" class="pk-wissel">
+              <input type="hidden" name="sofascore_id" value="{{ f.sofascore_id }}">
+              <button type="submit" title="Wissel naar {{ f.naam }}">
+                {{ f.naam }}{% if f.competitie and f.competitie.naam %}<span class="pk-comp"> · {{ f.competitie.naam }}</span>{% endif %}
+              </button>
+            </form>
+            <form method="post" action="/prik-ploeg" class="pk-prik{{ ' aan' if f.vast }}">
+              <input type="hidden" name="sofascore_id" value="{{ f.sofascore_id }}">
+              <input type="hidden" name="actie" value="{{ 'los' if f.vast else 'vast' }}">
+              <button type="submit" title="{{ 'Losmaken' if f.vast else 'Vastprikken' }}">📌</button>
+            </form>
+          </div>
+        {% endmacro %}
+        {% if vastgeprikt %}
+          <div class="pk-kop">Vastgeprikt</div>
+          {% for f in vastgeprikt %}{{ pkrij(f) }}{% endfor %}
+        {% endif %}
+        {% if recent %}
+          <div class="pk-kop">Recent</div>
+          {% for f in recent %}{{ pkrij(f) }}{% endfor %}
+        {% endif %}
+        <div class="pk-kop">Andere ploeg</div>
+        <form method="post" action="/wissel-ploeg" class="pk-nieuw" id="pk-nieuw">
+          <select id="pk-comp">
+            <option value="">— competitie —</option>
+            {% for c in competities %}<option value="{{ c.sofascore_ut }}">{{ c.naam }}</option>{% endfor %}
+          </select>
+          <select name="sofascore_id" id="pk-team" disabled><option value="">—</option></select>
+          <input type="hidden" name="ut" id="pk-ut">
+          <input type="hidden" name="naam" id="pk-naam">
+          <button type="submit" id="pk-go" disabled>Wissel</button>
+        </form>
+      </div>
+    </div>
     {% endif %}
     <span class="nu">{{ nu }}{% if toon_kiezer %} &nbsp;·&nbsp; <a href="/instellingen">instellingen</a>{% endif %}</span>
   </div>
@@ -393,13 +450,14 @@
       <!-- spelerscores: vlak onder het verloop -->
       <h3>Spelerscores vorige wedstrijd</h3>
       {% if o.scoretabel %}
+      {% set gem_kol = 5 if toon_whoscored else 4 %}
       <div class="bar" style="margin-bottom:10px">
         <span class="muted">Open de match op:</span>
         {% if o.score_links.sofascore %}<a class="btn grijs klein" href="{{ o.score_links.sofascore }}" target="_blank" rel="noopener">Sofascore ↗</a>{% endif %}
         {% if o.score_links.fotmob %}<a class="btn grijs klein" href="{{ o.score_links.fotmob }}" target="_blank" rel="noopener">FotMob ↗</a>{% endif %}
-        <a class="btn grijs klein" href="{{ o.score_links.whoscored }}" target="_blank" rel="noopener">WhoScored ↗ <span class="muted">(clubpagina)</span></a>
+        {% if o.score_links.whoscored %}<a class="btn grijs klein" href="{{ o.score_links.whoscored }}" target="_blank" rel="noopener">WhoScored ↗ <span class="muted">(clubpagina)</span></a>{% endif %}
       </div>
-      <p class="muted">Sofascore en FotMob worden automatisch opgehaald. WhoScored vul je zelf in — die waarden blijven bewaard.
+      <p class="muted">Sofascore en FotMob worden automatisch opgehaald.{% if toon_whoscored %} WhoScored vul je zelf in — die waarden blijven bewaard.{% endif %}
          Klik een kolomtitel om te sorteren (bv. op <strong>Gemiddelde</strong>).</p>
       <form method="post" action="/ratings">
         <input type="hidden" name="event_id" value="{{ o.event_id or '' }}">
@@ -409,8 +467,8 @@
             <th class="num" onclick="sorteerTabel(this,1,true)">Min</th>
             <th class="num" onclick="sorteerTabel(this,2,true)">Sofascore</th>
             <th class="num" onclick="sorteerTabel(this,3,true)">FotMob</th>
-            <th class="num" onclick="sorteerTabel(this,4,true)">WhoScored</th>
-            <th class="num" onclick="sorteerTabel(this,5,true)">Gemiddelde</th>
+            {% if toon_whoscored %}<th class="num" onclick="sorteerTabel(this,4,true)">WhoScored</th>{% endif %}
+            <th class="num" onclick="sorteerTabel(this,{{ gem_kol }},true)">Gemiddelde</th>
           </tr></thead>
           <tbody>
           {% for r in o.scoretabel %}
@@ -425,8 +483,8 @@
             <td class="num" data-v="{{ r.fotmob if r.fotmob is not none else 0 }}">{% if r.fotmob is not none %}
               <span class="scorepil {{ 's-hoog' if r.fotmob>=7 else 's-laag' if r.fotmob<6 else 's-mid' }}">{{ '%.1f'|format(r.fotmob) }}</span>
               {% else %}–{% endif %}</td>
-            <td class="num" data-v="{{ r.whoscored if r.whoscored is not none else 0 }}"><input class="rating" name="whoscored__{{ r.player_key }}"
-                value="{{ '%.2f'|format(r.whoscored) if r.whoscored is not none else '' }}" inputmode="decimal"></td>
+            {% if toon_whoscored %}<td class="num" data-v="{{ r.whoscored if r.whoscored is not none else 0 }}"><input class="rating" name="whoscored__{{ r.player_key }}"
+                value="{{ '%.2f'|format(r.whoscored) if r.whoscored is not none else '' }}" inputmode="decimal"></td>{% endif %}
             <td class="num" data-v="{{ r.gemiddelde if r.gemiddelde is not none else 0 }}"><strong>{{ '%.2f'|format(r.gemiddelde) if r.gemiddelde is not none else '–' }}</strong></td>
           </tr>
           {% endfor %}
@@ -922,6 +980,35 @@
         document.body.innerHTML='<p style="padding:40px;font:16px/1.5 system-ui;color:#e7e9ee">'
           +'De tool is afgesloten. Je mag dit tabblad sluiten.</p>';
       });
+    });
+  })();
+
+  // ploegkiezer bovenaan (enkel in de generieke variant)
+  (function(){
+    const pk=document.getElementById('pk'); if(!pk) return;
+    const knop=document.getElementById('pk-knop'), paneel=document.getElementById('pk-paneel');
+    function open(v){ paneel.hidden=!v; knop.setAttribute('aria-expanded', v?'true':'false'); }
+    knop.addEventListener('click',()=>open(paneel.hidden));
+    document.addEventListener('click',e=>{ if(!pk.contains(e.target)) open(false); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') open(false); });
+
+    const comp=document.getElementById('pk-comp'), team=document.getElementById('pk-team'),
+          go=document.getElementById('pk-go'), ut=document.getElementById('pk-ut'),
+          naam=document.getElementById('pk-naam');
+    comp.addEventListener('change',async()=>{
+      go.disabled=true; team.disabled=true; team.innerHTML='<option>laden…</option>';
+      if(!comp.value){ team.innerHTML='<option value="">—</option>'; return; }
+      try{
+        const lijst=await (await fetch('/api/ploegen?ut='+comp.value)).json();
+        team.innerHTML='<option value="">— ploeg —</option>'+lijst.map(p=>
+          `<option value="${p.id}" data-naam="${(p.naam||'').replace(/"/g,'&quot;')}">${p.naam}</option>`).join('');
+        team.disabled=false;
+      }catch(e){ team.innerHTML='<option value="">— kon niet laden —</option>'; }
+    });
+    team.addEventListener('change',()=>{
+      go.disabled=!team.value;
+      ut.value=comp.value;
+      naam.value=team.selectedOptions[0]?.dataset.naam||'';
     });
   })();
 </script>

@@ -36,37 +36,51 @@
     <div class="rij">
       <span><span class="huidig">{{ actieve_ploeg.naam }}</span>
         <span class="meta">{{ actieve_ploeg.competitie.naam }}</span></span>
-      <form class="inline" method="post" action="/wissel-ploeg">
-        <input type="hidden" name="naar" value="kiezer">
-        <button class="rood" type="submit">Andere ploeg kiezen</button>
-      </form>
+      <a class="rood" href="/kies-ploeg" style="text-decoration:none;display:inline-block">Andere ploeg kiezen</a>
     </div>
+    <p class="meta" style="margin:8px 0 0">Snel wisselen kan ook via de knop met de ploegnaam bovenaan de tool.</p>
   </div>
 
-  {% if favorieten|length > 1 %}
+  {% macro beheerrij(f) %}
+    <div class="rij">
+      <span>{{ f.naam }}
+        {%- if f.competitie and f.competitie.naam %} <span class="meta">{{ f.competitie.naam }}</span>{% endif %}
+        {%- if f.sofascore_id == actieve_ploeg.sofascore_id %} <span class="huidig">· actief</span>{% endif %}
+      </span>
+      <span>
+        {% if f.sofascore_id != actieve_ploeg.sofascore_id %}
+        <form class="inline" method="post" action="/wissel-ploeg">
+          <input type="hidden" name="sofascore_id" value="{{ f.sofascore_id }}">
+          <button type="submit">Maak actief</button>
+        </form>
+        {% endif %}
+        <form class="inline" method="post" action="/prik-ploeg">
+          <input type="hidden" name="sofascore_id" value="{{ f.sofascore_id }}">
+          <input type="hidden" name="actie" value="{{ 'los' if f.vast else 'vast' }}">
+          <button type="submit">{{ 'Losmaken' if f.vast else 'Vastprikken' }}</button>
+        </form>
+        {% if f.sofascore_id != actieve_ploeg.sofascore_id %}
+        <form class="inline" method="post" action="/prik-ploeg">
+          <input type="hidden" name="sofascore_id" value="{{ f.sofascore_id }}">
+          <input type="hidden" name="actie" value="weg">
+          <button type="submit">Verwijder</button>
+        </form>
+        {% endif %}
+      </span>
+    </div>
+  {% endmacro %}
+
+  {% if vastgeprikt %}
   <div class="kaart">
-    <h2>Favorieten</h2>
-    {% for f in favorieten %}
-      <div class="rij">
-        <span>{{ f.naam }}
-          {%- if f.competitie and f.competitie.naam %} <span class="meta">{{ f.competitie.naam }}</span>{% endif %}
-          {%- if f.sofascore_id == actieve_ploeg.sofascore_id %} <span class="huidig">· actief</span>{% endif %}
-        </span>
-        <span>
-          {% if f.sofascore_id != actieve_ploeg.sofascore_id %}
-          <form class="inline" method="post" action="/wissel-ploeg">
-            <input type="hidden" name="index" value="{{ loop.index0 }}">
-            <button type="submit">Maak actief</button>
-          </form>
-          <form class="inline" method="post" action="/favoriet">
-            <input type="hidden" name="index" value="{{ loop.index0 }}">
-            <input type="hidden" name="actie" value="weg">
-            <button type="submit">Verwijder</button>
-          </form>
-          {% endif %}
-        </span>
-      </div>
-    {% endfor %}
+    <h2>Vastgeprikt</h2>
+    {% for f in vastgeprikt %}{{ beheerrij(f) }}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if recent %}
+  <div class="kaart">
+    <h2>Recent gebruikt</h2>
+    {% for f in recent %}{{ beheerrij(f) }}{% endfor %}
   </div>
   {% endif %}
 

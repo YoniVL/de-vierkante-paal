@@ -38,3 +38,8 @@ def app_naam() -> str:
 
 def toon_kiezer() -> bool:
     return bool(merk()["toon_kiezer"])
+
+
+def toon_whoscored() -> bool:
+    """WhoScored-kolom tonen? Standaard: wel in de DVP-variant, niet in de generieke."""
+    return bool(merk().get("whoscored", not toon_kiezer()))

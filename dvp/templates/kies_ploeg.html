@@ -37,10 +37,16 @@
 </head>
 <body>
 <main>
+  {% if voorinvul %}
+  <h1>Wisselen naar {{ voorinvul.naam }}</h1>
+  <p class="sub">Even de bronnen controleren, dan haalt {{ app_naam }} de data op.
+     <a href="/">← annuleren</a></p>
+  {% else %}
   <h1>Welke ploeg wil je voorbereiden?</h1>
   <p class="sub">{{ app_naam }} verzamelt per wedstrijd de feiten en cijfers voor jouw club.</p>
+  {% endif %}
 
-  <div class="stap" id="stap-comp">
+  <div class="stap{{ ' dim' if voorinvul }}" id="stap-comp">
     <label for="comp">Competitie</label>
     <select id="comp">
       <option value="">— kies —</option>
@@ -171,6 +177,24 @@ function toonBronnen(d, optC) {
   stapBev.classList.remove('dim');
   stapBev.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
+
+{% if voorinvul %}
+(async function(){
+  comp.value = "{{ voorinvul.ut }}";
+  stapPloeg.classList.add('dim');
+  const optC = comp.selectedOptions[0];
+  const body = new URLSearchParams({ ut: "{{ voorinvul.ut }}",
+    sofascore_id: "{{ voorinvul.sofascore_id }}", naam: {{ voorinvul.naam|tojson }} });
+  try {
+    const r = await fetch('/kies-ploeg', { method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+    toonBronnen(await r.json(), optC);
+  } catch (e) {
+    $('#bronnen').innerHTML = '<div class="fout">Er ging iets mis. <a href="/">Terug</a> en opnieuw proberen.</div>';
+    stapBev.classList.remove('dim');
+  }
+})();
+{% endif %}
 </script>
 </body>
 </html>

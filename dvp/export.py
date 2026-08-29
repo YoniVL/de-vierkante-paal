@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from . import ploeg
 from .merk import app_naam as _app_naam
+from .merk import toon_whoscored as _toon_whoscored
 
 
 def _score(v) -> str:
@@ -91,18 +92,21 @@ def naar_markdown(o: dict) -> str:
         # spelerscores horen bij de vorige wedstrijd
         if o.get("scoretabel"):
             links = o.get("score_links") or {}
+            ws = _toon_whoscored()
             bronnen = " · ".join(
                 f"[{naam}]({links[key]})"
                 for naam, key in (("Sofascore", "sofascore"), ("FotMob", "fotmob"), ("WhoScored", "whoscored"))
                 if links.get(key)
             )
             r.append(f"\n**Spelerscores** (open de match: {bronnen})\n")
-            r.append("| Speler | Min | Sofascore | FotMob | WhoScored | Gemiddelde |")
-            r.append("|---|---:|---:|---:|---:|---:|")
+            _ws_kop, _ws_lijn = ("WhoScored | ", "---: | ") if ws else ("", "")
+            r.append(f"| Speler | Min | Sofascore | FotMob | {_ws_kop}Gemiddelde |")
+            r.append(f"|---|---:|---:|---:| {_ws_lijn}---:|")
             for rij in o["scoretabel"]:
                 naam = rij["speler"] + (" (in)" if rij["invaller"] else "")
+                _ws_cel = f"{_score(rij['whoscored'])} | " if ws else ""
                 r.append(f"| {naam} | {rij['minuten'] or ''} | {_score(rij['sofascore'])} | "
-                         f"{_score(rij['fotmob'])} | {_score(rij['whoscored'])} | {_score(rij['gemiddelde'])} |")
+                         f"{_score(rij['fotmob'])} | {_ws_cel}{_score(rij['gemiddelde'])} |")
 
     # 2. Voorbeschouwing
     if volgende:
