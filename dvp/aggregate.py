@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from . import config, store
+import urllib.parse
+
+from . import config, ploeg, store
 from .names import NaamKoppelaar, normaliseer
 
 
@@ -17,6 +19,14 @@ def _delta(nu, toen) -> int | None:
 
 def _aliassen() -> dict:
     return store.get_kv("aliassen", {}) or {}
+
+
+def _whoscored_link() -> str:
+    vast = getattr(config, "WHOSCORED_TEAM_URL", "")
+    if vast and not ploeg.is_gekozen():
+        return vast
+    naam = ploeg.actieve().get("naam") or ""
+    return f"https://www.whoscored.com/search/?t={urllib.parse.quote(naam)}"
 
 
 def bouw_scoretabel(sofascore: dict, fotmob: dict, event_id: str | None) -> list[dict]:
@@ -57,7 +67,7 @@ def bouw_scoretabel(sofascore: dict, fotmob: dict, event_id: str | None) -> list
 
 def bouw_stattabel(transfermarkt: dict, sofascore: dict | None = None) -> list[dict]:
     spelers = (transfermarkt or {}).get("spelers") or []
-    vorige_snapshot = store.previous_stat_snapshot()
+    vorige_snapshot = store.previous_stat_snapshot(ploeg.sleutel())
 
     seizoen_ratings = ((sofascore or {}).get("seizoen_ratings") or {}).get("spelers") or {}
     rating_koppelaar = NaamKoppelaar(list(seizoen_ratings), _aliassen()) if seizoen_ratings else None
@@ -193,7 +203,7 @@ def bouw_overzicht() -> dict:
         "score_links": {
             "sofascore": (sofascore.get("vorige") or {}).get("url"),
             "fotmob": (fotmob.get("vorige") or {}).get("url"),
-            "whoscored": config.WHOSCORED_TEAM_URL,
+            "whoscored": _whoscored_link(),
         },
         "tijdstippen": {
             "sofascore": store.get_kv_updated("bron:sofascore"),

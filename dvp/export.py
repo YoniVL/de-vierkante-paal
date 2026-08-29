@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from . import ploeg
+from .merk import app_naam as _app_naam
+
 
 def _score(v) -> str:
     return f"{v:.2f}" if isinstance(v, (int, float)) else "–"
@@ -41,7 +44,8 @@ def naar_markdown(o: dict) -> str:
     volgende = so.get("volgende") or {}
     vb = so.get("voorbeschouwing") or {}
 
-    r.append("# De Vierkante Paal — voorbereiding\n")
+    _titel = ploeg.actieve().get("naam") if ploeg.is_gekozen() else _app_naam()
+    r.append(f"# {_titel} — voorbereiding\n")
 
     # 1. Vorige wedstrijd
     if vorige:

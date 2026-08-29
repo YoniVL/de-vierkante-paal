@@ -23,17 +23,25 @@ def _getal(tekst: str) -> int:
     return int(cijfers) if cijfers else 0
 
 
-def _leistungsdaten_url(seizoen: int) -> str:
+def _leistungsdaten_url(club_id: int, club_slug: str, seizoen: int) -> str:
     # reldata/%26<jaar>  ->  '&' + jaar  =  alle competities, dat seizoen
     return (
-        f"{BASE}/{config.TRANSFERMARKT_CLUB_SLUG}/leistungsdaten/verein/"
-        f"{config.TRANSFERMARKT_CLUB_ID}/reldata/%26{seizoen}/plus/1"
+        f"{BASE}/{club_slug}/leistungsdaten/verein/"
+        f"{club_id}/reldata/%26{seizoen}/plus/1"
     )
 
 
-def fetch(seizoen: int | None = None) -> dict:
+def fetch(seizoen: int | None = None, ploeg: dict | None = None) -> dict:
+    club_id = (ploeg or {}).get("tm_id") or config.TRANSFERMARKT_CLUB_ID
+    club_slug = (ploeg or {}).get("tm_slug") or config.TRANSFERMARKT_CLUB_SLUG
     seizoen = seizoen or config.huidig_seizoen_jaar()
-    url = _leistungsdaten_url(seizoen)
+    if not club_id or not club_slug:
+        return {
+            "opgehaald_op": _dt.datetime.now().isoformat(timespec="seconds"),
+            "seizoen": f"{seizoen}/{str(seizoen + 1)[-2:]}", "bron_url": None,
+            "spelers": [], "uitval": {"geblesseerd": [], "geschorst": []},
+        }
+    url = _leistungsdaten_url(club_id, club_slug, seizoen)
     html = get_html(url, key="transfermarkt")
     soup = BeautifulSoup(html, "html.parser")
     tabel = soup.select_one("table.items")
@@ -75,14 +83,16 @@ def fetch(seizoen: int | None = None) -> dict:
         "seizoen": f"{seizoen}/{str(seizoen + 1)[-2:]}",
         "bron_url": url,
         "spelers": spelers,
-        "uitval": blessures_schorsingen(
-            config.TRANSFERMARKT_CLUB_ID, config.TRANSFERMARKT_CLUB_SLUG
-        ),
+        "uitval": blessures_schorsingen(club_id, club_slug),
     }
 
 
-def zoek_club(naam: str) -> tuple[int, str] | None:
-    """Transfermarkt-verein-id + slug voor een clubnaam (via de snelzoekfunctie)."""
+def zoek_club(naam: str, competitie_naam: str | None = None) -> tuple[int, str] | None:
+    """Transfermarkt-verein-id + slug voor een clubnaam (via de snelzoekfunctie).
+
+    ``competitie_naam`` (optioneel) helpt de juiste club kiezen als er meerdere
+    matches zijn (bv. jeugdteams, gelijknamige clubs in andere landen).
+    """
     vast = config.PRO_LEAGUE_TM.get(naam)
     if vast:
         return vast
@@ -94,11 +104,26 @@ def zoek_club(naam: str) -> tuple[int, str] | None:
     except Exception:
         return None
     soup = BeautifulSoup(html, "html.parser")
-    a = soup.select_one("a[href*='/startseite/verein/'], a[href*='/kader/verein/']")
-    if not a:
+
+    kandidaten: list[tuple[int, str, str]] = []   # (id, slug, competitie)
+    for tr in soup.select("table.items tbody > tr"):
+        a = tr.select_one("td.hauptlink a")
+        if not a or "/verein/" not in a.get("href", ""):
+            continue  # spelers- of stafrijen overslaan
+        m = re.search(r"/([a-z0-9-]+)/(?:startseite|kader)/verein/(\d+)", a.get("href", ""))
+        if not m:
+            continue
+        liga = tr.select_one("a[href*='/wettbewerb/']")
+        kandidaten.append((int(m.group(2)), m.group(1), liga.get_text(strip=True) if liga else ""))
+
+    if not kandidaten:
         return None
-    m = re.search(r"/([a-z0-9-]+)/(?:startseite|kader)/verein/(\d+)", a.get("href", ""))
-    return (int(m.group(2)), m.group(1)) if m else None
+    if competitie_naam:
+        from ..names import clubs_gelijk
+        for cid, slug, liga in kandidaten:
+            if liga and clubs_gelijk(liga, competitie_naam):
+                return (cid, slug)
+    return (kandidaten[0][0], kandidaten[0][1])
 
 
 def kader(club_id: int, club_slug: str, seizoen: int | None = None) -> list[str]:
@@ -195,22 +220,26 @@ def _transfers_seizoen(club_slug: str, club_id: int, jaar: int) -> dict:
 
 
 def connecties(opp_naam: str, opp_squad: list[str], antwerp_squad: list[str],
-               seizoenen: int = 8) -> dict:
-    """Ex-Antwerp-spelers die *nu* bij de tegenstander spelen, en omgekeerd.
+               eigen_tm: tuple[int, str] | None = None, seizoenen: int = 8) -> dict:
+    """Ex-spelers van de eigen ploeg die *nu* bij de tegenstander spelen, en omgekeerd.
 
     Een speler telt enkel mee als hij (a) in de laatste ``seizoenen`` de club
     verliet/kwam én (b) op dit moment nog in de huidige selectie van de andere club zit.
     """
     from ..names import clubs_gelijk, normaliseer
 
+    eigen_id, eigen_slug = eigen_tm or (config.TRANSFERMARKT_CLUB_ID, config.TRANSFERMARKT_CLUB_SLUG)
+    if not eigen_id or not eigen_slug:
+        return {"ex_antwerp_bij_tegenstander": [], "ex_tegenstander_bij_antwerp": []}
+
     dit_jaar = config.huidig_seizoen_jaar()
     opp_norm = {normaliseer(n) for n in opp_squad}
     ant_norm = {normaliseer(n) for n in antwerp_squad}
 
-    ex_antwerp: dict[str, str] = {}   # speler -> naar welke club hij Antwerp verliet
-    ex_opp: dict[str, str] = {}       # speler -> van welke club hij bij Antwerp kwam
+    ex_antwerp: dict[str, str] = {}   # speler -> naar welke club hij de eigen ploeg verliet
+    ex_opp: dict[str, str] = {}       # speler -> van welke club hij bij de eigen ploeg kwam
     for jaar in range(dit_jaar, dit_jaar - seizoenen, -1):
-        data = _transfers_seizoen(config.TRANSFERMARKT_CLUB_SLUG, config.TRANSFERMARKT_CLUB_ID, jaar)
+        data = _transfers_seizoen(eigen_slug, eigen_id, jaar)
         for speler, naar_club in data["vertrekkers"]:
             if normaliseer(speler) in opp_norm:  # zit nu in de kern van de tegenstander
                 ex_antwerp.setdefault(speler, naar_club)

@@ -11,7 +11,19 @@ from ..http_client import get_json_impersonated as _get
 
 API = "https://api.sofascore.com/api/v1"
 WEB = "https://www.sofascore.com"
+
+# De actieve ploeg. Wordt bovenaan fetch() gezet op basis van de gekozen ploeg;
+# de rest van de module leest deze waarden (de verversing draait geserialiseerd).
 TEAM = config.SOFASCORE_TEAM_ID
+TEAM_NAAM = config.CLUB_NAAM
+
+
+def _huidig_seizoen(ut: int) -> int | None:
+    try:
+        seasons = _get(f"{API}/unique-tournament/{ut}/seasons").get("seasons") or []
+        return seasons[0]["id"] if seasons else None
+    except Exception:
+        return None
 
 
 def _ts_to_iso(ts: int | None) -> str | None:
@@ -184,7 +196,7 @@ def _reeksen(volgende_ev: dict) -> dict:
         if kant == "both":
             return "beide ploegen"
         thuis = kant == "home"
-        return "Antwerp" if thuis == h_is_antwerp else (teg_naam or "tegenstander")
+        return TEAM_NAAM if thuis == h_is_antwerp else (teg_naam or "tegenstander")
 
     for sleutel, doel in (("general", "algemeen"), ("head2head", "onderling")):
         for item in data.get(sleutel, []):
@@ -650,8 +662,12 @@ def _haal_event(event_id: str | int) -> dict | None:
         return None
 
 
-def fetch(gekozen_event_id: str | None = None) -> dict:
+def fetch(gekozen_event_id: str | None = None, ploeg: dict | None = None) -> dict:
     """Alles wat Sofascore levert, in één blok voor de template."""
+    global TEAM, TEAM_NAAM
+    TEAM = (ploeg or {}).get("sofascore_id") or config.SOFASCORE_TEAM_ID
+    TEAM_NAAM = (ploeg or {}).get("naam") or config.CLUB_NAAM
+
     vorige_ev, volgende_ev, alle_events = _kies_events()
 
     if gekozen_event_id and str(gekozen_event_id) != str((vorige_ev or {}).get("id")):
@@ -659,7 +675,17 @@ def fetch(gekozen_event_id: str | None = None) -> dict:
         if gekozen:
             vorige_ev = gekozen
 
-    comp_ctx = _competitie_context(alle_events)
+    # De competitie voor klassement + topschutters: de gekozen competitie van de
+    # ploeg (generieke variant), anders afgeleid uit de kalender.
+    comp = ((ploeg or {}).get("competitie") or {})
+    comp_ctx = None
+    if comp.get("sofascore_ut"):
+        seizoen = _huidig_seizoen(comp["sofascore_ut"])
+        if seizoen:
+            comp_ctx = {"ut": comp["sofascore_ut"], "seizoen": seizoen,
+                        "naam": comp.get("naam") or ""}
+    if not comp_ctx:
+        comp_ctx = _competitie_context(alle_events)
     resultaat: dict = {"opgehaald_op": _dt.datetime.now().isoformat(timespec="seconds")}
     if comp_ctx:
         resultaat["competitie"] = comp_ctx

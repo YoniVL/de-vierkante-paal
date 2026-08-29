@@ -31,9 +31,11 @@ def _squad_namen(zijde: dict | None) -> list[str]:
     return [p["naam"] for p in (zijde.get("basis", []) + zijde.get("bank", [])) if p.get("naam")]
 
 
-def fetch(sofascore_blob: dict, antwerp_squad: list[str]) -> dict:
+def fetch(sofascore_blob: dict, antwerp_squad: list[str], ploeg: dict | None = None) -> dict:
     so = sofascore_blob or {}
-    eigen_kader = transfermarkt.kader(config.TRANSFERMARKT_CLUB_ID, config.TRANSFERMARKT_CLUB_SLUG)
+    eigen_id = (ploeg or {}).get("tm_id") or config.TRANSFERMARKT_CLUB_ID
+    eigen_slug = (ploeg or {}).get("tm_slug") or config.TRANSFERMARKT_CLUB_SLUG
+    eigen_kader = transfermarkt.kader(eigen_id, eigen_slug) if (eigen_id and eigen_slug) else []
     if eigen_kader:
         antwerp_squad = eigen_kader
     volgende = so.get("volgende") or {}
@@ -68,7 +70,9 @@ def fetch(sofascore_blob: dict, antwerp_squad: list[str]) -> dict:
             pass
 
     try:
-        out["connecties"] = transfermarkt.connecties(naam, opp_squad, antwerp_squad)
+        out["connecties"] = transfermarkt.connecties(
+            naam, opp_squad, antwerp_squad, eigen_tm=(eigen_id, eigen_slug)
+        )
     except Exception:
         pass
 

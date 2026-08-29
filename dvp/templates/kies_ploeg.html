@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/static/logo.png">
+<title>{{ app_naam }} — ploeg kiezen</title>
+<style>
+  :root{color-scheme:dark;--rood:#ff4d67;--inkt:#e7e9ee;--grijs:#8a93a3;--lijn:#2a2f3a;
+        --vlak:#171a21;--vlak-2:#1e222b;--bg:#0e1014;--goed:#4ade80;--slecht:#f87171}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 system-ui,"Segoe UI",Roboto,sans-serif;color:var(--inkt);background:var(--bg)}
+  main{max-width:640px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:20px;margin:0 0 4px}
+  p.sub{color:var(--grijs);margin:0 0 28px}
+  .stap{background:var(--vlak);border:1px solid var(--lijn);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+  .stap.dim{opacity:.45;pointer-events:none}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--grijs);margin-bottom:6px;font-weight:700}
+  select,input[type=text]{width:100%;background:var(--vlak-2);color:var(--inkt);border:1px solid var(--lijn);
+        border-radius:8px;padding:10px 11px;font:inherit}
+  button{background:var(--rood);color:#12151a;border:0;border-radius:8px;padding:11px 18px;font:inherit;
+        font-weight:700;cursor:pointer;margin-top:14px}
+  button.grijs{background:var(--vlak-2);color:var(--inkt);border:1px solid var(--lijn)}
+  button:disabled{opacity:.4;cursor:default}
+  .bron{border-top:1px solid var(--lijn);padding:12px 0}
+  .bron:first-child{border-top:0}
+  .bron .kop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .bron .naam{font-weight:700}
+  .bron .meta{color:var(--grijs);font-size:13px}
+  .ok{color:var(--goed)} .waarschuw{color:var(--slecht)}
+  .andere{margin-top:8px;display:none}
+  .andere.open{display:block}
+  a.mini{font-size:12.5px;color:var(--rood);cursor:pointer}
+  .fout{color:var(--slecht);font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Welke ploeg wil je voorbereiden?</h1>
+  <p class="sub">{{ app_naam }} verzamelt per wedstrijd de feiten en cijfers voor jouw club.</p>
+
+  <div class="stap" id="stap-comp">
+    <label for="comp">Competitie</label>
+    <select id="comp">
+      <option value="">— kies —</option>
+      {% for c in competities %}
+        <option value="{{ c.sofascore_ut }}"
+          data-naam="{{ c.naam }}" data-tm="{{ c.tm_code }}" data-cc="{{ c.fotmob_ccode3 }}">
+          {{ c.naam }} ({{ c.land }})
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="stap dim" id="stap-ploeg">
+    <label for="ploeg">Ploeg</label>
+    <select id="ploeg"><option value="">— kies eerst een competitie —</option></select>
+    <div class="fout" id="ploeg-fout" style="display:none"></div>
+    <button id="zoek" disabled>Bronnen opzoeken →</button>
+  </div>
+
+  <div class="stap dim" id="stap-bevestig">
+    <label>Klopt dit?</label>
+    <div id="bronnen"></div>
+    <form method="post" action="/bevestig-ploeg" id="bevestig-form">
+      <input type="hidden" name="naam"><input type="hidden" name="sofascore_id">
+      <input type="hidden" name="ut"><input type="hidden" name="competitie_naam">
+      <input type="hidden" name="tm_code">
+      <input type="hidden" name="fotmob_id"><input type="hidden" name="fotmob_ccode3">
+      <input type="hidden" name="tm_id"><input type="hidden" name="tm_slug">
+      <input type="hidden" name="tm_plak">
+      <button type="submit">Bevestigen en data ophalen</button>
+    </form>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const comp = $('#comp'), ploeg = $('#ploeg'), zoek = $('#zoek');
+const stapPloeg = $('#stap-ploeg'), stapBev = $('#stap-bevestig');
+
+comp.addEventListener('change', async () => {
+  stapBev.classList.add('dim'); zoek.disabled = true;
+  ploeg.innerHTML = '<option>laden…</option>'; stapPloeg.classList.remove('dim');
+  $('#ploeg-fout').style.display = 'none';
+  if (!comp.value) { stapPloeg.classList.add('dim'); return; }
+  try {
+    const r = await fetch('/api/ploegen?ut=' + comp.value);
+    const lijst = await r.json();
+    if (!lijst.length) throw new Error('geen ploegen gevonden');
+    ploeg.innerHTML = '<option value="">— kies —</option>' +
+      lijst.map(p => `<option value="${p.id}" data-naam="${p.naam.replace(/"/g,'&quot;')}">${p.naam}</option>`).join('');
+  } catch (e) {
+    ploeg.innerHTML = '<option value="">—</option>';
+    $('#ploeg-fout').textContent = 'Kon de ploegen niet ophalen. Probeer opnieuw.';
+    $('#ploeg-fout').style.display = 'block';
+  }
+});
+
+ploeg.addEventListener('change', () => {
+  zoek.disabled = !ploeg.value;
+  stapBev.classList.add('dim');
+});
+
+zoek.addEventListener('click', async () => {
+  zoek.disabled = true; zoek.textContent = 'bezig…';
+  const optC = comp.selectedOptions[0], optP = ploeg.selectedOptions[0];
+  const body = new URLSearchParams({ ut: comp.value, sofascore_id: ploeg.value,
+                                     naam: optP.dataset.naam });
+  try {
+    const r = await fetch('/kies-ploeg', { method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+    toonBronnen(await r.json(), optC);
+  } catch (e) {
+    $('#bronnen').innerHTML = '<div class="fout">Er ging iets mis. Probeer opnieuw.</div>';
+    stapBev.classList.remove('dim');
+  }
+  zoek.disabled = false; zoek.textContent = 'Bronnen opzoeken →';
+});
+
+function toonBronnen(d, optC) {
+  const f = $('#bevestig-form');
+  f.naam.value = d.naam; f.sofascore_id.value = d.sofascore_id;
+  f.ut.value = d.competitie.sofascore_ut;
+  f.competitie_naam.value = d.competitie.naam || optC.dataset.naam;
+  f.tm_code.value = d.competitie.tm_code || optC.dataset.tm || '';
+  f.fotmob_ccode3.value = d.fotmob_ccode3 || optC.dataset.cc || 'BEL';
+  f.fotmob_id.value = d.fotmob_id || '';
+  f.tm_id.value = d.tm_id || ''; f.tm_slug.value = d.tm_slug || ''; f.tm_plak.value = '';
+
+  const fmOpts = (d.fotmob_opties || []).map((o,i) =>
+    `<option value="${o.id}" ${o.id==d.fotmob_id?'selected':''}>${o.naam} — ${o.competitie||'?'}</option>`).join('');
+
+  $('#bronnen').innerHTML = `
+    <div class="bron">
+      <div class="kop"><span class="naam">Sofascore</span><span class="ok">✓ ${d.naam}</span></div>
+    </div>
+    <div class="bron">
+      <div class="kop">
+        <span class="naam">FotMob</span>
+        <span class="meta">${d.fotmob_id ? (d.fotmob_naam + ' — ' + (d.fotmob_competitie||'?')) : '<span class=waarschuw>niet gevonden</span>'}</span>
+      </div>
+      <a class="mini" data-toggle="fm">andere kiezen</a>
+      <div class="andere" id="andere-fm">
+        ${fmOpts ? `<select id="fm-select">${fmOpts}</select>` : ''}
+        <input type="text" id="fm-url" placeholder="of plak de FotMob-URL van de ploeg" style="margin-top:8px">
+      </div>
+    </div>
+    <div class="bron">
+      <div class="kop">
+        <span class="naam">Transfermarkt</span>
+        <span class="meta">${d.tm_id ? (d.tm_slug + ' (id ' + d.tm_id + ')') : '<span class=waarschuw>niet gevonden</span>'}</span>
+      </div>
+      <a class="mini" data-toggle="tm">andere / corrigeren</a>
+      <div class="andere" id="andere-tm">
+        <input type="text" id="tm-url" placeholder="plak de Transfermarkt-URL van de ploeg">
+      </div>
+    </div>`;
+
+  document.querySelectorAll('.mini[data-toggle]').forEach(a =>
+    a.addEventListener('click', () => $('#andere-' + a.dataset.toggle).classList.toggle('open')));
+
+  const fmSel = $('#fm-select'), fmUrl = $('#fm-url'), tmUrl = $('#tm-url');
+  if (fmSel) fmSel.addEventListener('change', () => { f.fotmob_id.value = fmSel.value; });
+  if (fmUrl) fmUrl.addEventListener('input', () => {
+    const m = fmUrl.value.match(/teams\/(\d+)/); if (m) f.fotmob_id.value = m[1];
+  });
+  tmUrl.addEventListener('input', () => { f.tm_plak.value = tmUrl.value; });
+
+  stapBev.classList.remove('dim');
+  stapBev.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="/static/logo.png">
-<title>De Vierkante Paal — voorbereiding</title>
+<title>{{ app_naam }} — voorbereiding</title>
 <style>
   :root{
     color-scheme:dark;
@@ -27,6 +27,8 @@
   header h1{font-size:16px;margin:0;font-weight:700;color:var(--inkt)}
   header .club{color:var(--rood);font-weight:700}
   header .nu{color:var(--grijs);font-size:12.5px;margin-left:auto}
+  header .ploegwissel select{background:var(--vlak-2);color:var(--inkt);border:1px solid var(--lijn);
+       border-radius:7px;padding:5px 9px;font:inherit;font-size:13px;max-width:260px}
 
   main{max-width:1080px;margin:0 auto;padding:20px}
   section{background:var(--vlak);border:1px solid var(--lijn);border-radius:12px;padding:20px 22px;margin-bottom:16px}
@@ -223,9 +225,22 @@
 
 <header>
   <div class="inner">
-    <img class="logo" src="/static/logo.png" alt="De Vierkante Paal">
-    <h1>De Vierkante Paal &nbsp;·&nbsp; <span class="club">{{ club }}</span></h1>
-    <span class="nu">{{ nu }}</span>
+    <img class="logo" src="/static/logo.png" alt="{{ app_naam }}">
+    <h1>{{ app_naam }} &nbsp;·&nbsp; <span class="club">{{ club }}</span></h1>
+    {% if toon_kiezer %}
+    <form method="post" action="/wissel-ploeg" class="ploegwissel">
+      <select name="index" onchange="if(this.value=='kiezer'){this.form.naar.value='kiezer'}this.form.submit()">
+        {% for f in favorieten %}
+          <option value="{{ loop.index0 }}" {{ 'selected' if f.sofascore_id == actieve_ploeg.sofascore_id }}>
+            {{ f.naam }}{% if f.competitie and f.competitie.naam %} · {{ f.competitie.naam }}{% endif %}
+          </option>
+        {% endfor %}
+        <option value="kiezer">+ andere ploeg kiezen…</option>
+      </select>
+      <input type="hidden" name="naar" value="">
+    </form>
+    {% endif %}
+    <span class="nu">{{ nu }}{% if toon_kiezer %} &nbsp;·&nbsp; <a href="/instellingen">instellingen</a>{% endif %}</span>
   </div>
 </header>
 <main>
@@ -441,7 +456,7 @@
       </div>
       <p class="muted" style="text-align:center">
         {{ n.competitie }}{% if n.ronde and (cv and cv.is_competitie) %} · speeldag {{ n.ronde }}{% endif %} · {{ (n.datum or '')[:10] }}
-        · {{ 'thuis' if n.antwerp_thuis else 'uit' }} voor Antwerp
+        · {{ 'thuis' if n.antwerp_thuis else 'uit' }} voor {{ eigen_naam }}
         {% if n.url %} · <a href="{{ n.url }}" target="_blank">Sofascore</a>{% endif %}
       </p>
 
@@ -477,11 +492,11 @@
       <h3>Reeksen &amp; mijlpalen</h3>
       <ul class="reeks">
         {% for r in rk.algemeen %}
-        <li><b class="{{ 'ant' if r.wie=='Antwerp' else 'teg' if r.wie==n.tegenstander.naam else '' }}">{{ r.wie }}</b>:
+        <li><b class="{{ 'ant' if r.wie==eigen_naam else 'teg' if r.wie==n.tegenstander.naam else '' }}">{{ r.wie }}</b>:
             {{ r.tekst }} — <strong>{{ r.waarde }}</strong></li>
         {% endfor %}
         {% for r in rk.onderling %}
-        <li><span class="g">onderling · </span><b class="{{ 'ant' if r.wie=='Antwerp' else 'teg' if r.wie==n.tegenstander.naam else '' }}">{{ r.wie }}</b>:
+        <li><span class="g">onderling · </span><b class="{{ 'ant' if r.wie==eigen_naam else 'teg' if r.wie==n.tegenstander.naam else '' }}">{{ r.wie }}</b>:
             {{ r.tekst }} — <strong>{{ r.waarde }}</strong></li>
         {% endfor %}
       </ul>
@@ -494,7 +509,7 @@
         <thead><tr><th>Ploeg</th><th style="min-width:170px">Vorm</th><th class="num">Goals v/t</th><th class="num">Clean&nbsp;sheets</th>
             <th class="num">Ongeslagen</th><th class="num">Scoren&nbsp;op&nbsp;rij</th></tr></thead>
         <tbody>
-        {% for kant, wie, blk in [('ant', 'Antwerp', vd.antwerp), ('teg', n.tegenstander.naam, vd.tegenstander)] %}
+        {% for kant, wie, blk in [('ant', eigen_naam, vd.antwerp), ('teg', n.tegenstander.naam, vd.tegenstander)] %}
         <tr>
           <td><span class="{{ kant }}">{{ wie }}</span></td>
           <td style="white-space:nowrap">{% for c in (blk.laatste5.vorm or '') %}<span class="v-{{ c }}">{{ c }}</span>{% endfor %}</td>
@@ -507,7 +522,7 @@
         </tbody>
       </table></div>
       <p class="muted" style="margin-top:8px;line-height:2.1">
-        <span class="ant">Antwerp</span> thuis:
+        <span class="ant">{{ eigen_naam }}</span> thuis:
         {% for c in (vd.antwerp.thuis5.vorm or '') %}<span class="v-{{ c }}">{{ c }}</span>{% endfor %}
         ({{ vd.antwerp.thuis5.gf }}–{{ vd.antwerp.thuis5.ga }}) &nbsp;·&nbsp;
         <span class="teg">{{ n.tegenstander.naam }}</span> uit:
@@ -519,7 +534,7 @@
       {% if vb and vb.h2h and vb.h2h.aantal %}
       <h3>Onderlinge duels</h3>
       <p><strong>Alle {{ vb.h2h.aantal }} duels:</strong>
-         <span class="ant">{{ vb.h2h.antwerp_winst }}× Antwerp</span> · {{ vb.h2h.gelijk }}× gelijk ·
+         <span class="ant">{{ vb.h2h.antwerp_winst }}× {{ eigen_naam }}</span> · {{ vb.h2h.gelijk }}× gelijk ·
          <span class="teg">{{ vb.h2h.tegenstander_winst }}× {{ n.tegenstander.naam }}</span></p>
       {% if vb.h2h.grootste_zege %}
         <p class="muted">Grootste zege: {{ vb.h2h.grootste_zege.tekst }}
@@ -639,14 +654,14 @@
       <h3>Connecties <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">— spelers die nu bij één van beide clubs zitten</span></h3>
       <div class="conn">
         <div class="kaart">
-          <h4>Ex-Antwerp, nu bij {{ n.tegenstander.naam }}</h4>
+          <h4>Ex-{{ eigen_naam }}, nu bij {{ n.tegenstander.naam }}</h4>
           <ul style="margin:0;padding-left:18px;font-size:13.5px">
-            {% for c in con.ex_antwerp_bij_tegenstander %}<li>{{ c.speler }}<span class="muted"> — verliet Antwerp naar {{ c.via }}</span></li>
+            {% for c in con.ex_antwerp_bij_tegenstander %}<li>{{ c.speler }}<span class="muted"> — verliet {{ eigen_naam }} naar {{ c.via }}</span></li>
             {% else %}<li class="muted">geen</li>{% endfor %}
           </ul>
         </div>
         <div class="kaart">
-          <h4>Ex-{{ n.tegenstander.naam }}, nu bij Antwerp</h4>
+          <h4>Ex-{{ n.tegenstander.naam }}, nu bij {{ eigen_naam }}</h4>
           <ul style="margin:0;padding-left:18px;font-size:13.5px">
             {% for c in con.ex_tegenstander_bij_antwerp %}<li>{{ c.speler }}<span class="muted"> — kwam van {{ c.van }}</span></li>
             {% else %}<li class="muted">geen</li>{% endfor %}

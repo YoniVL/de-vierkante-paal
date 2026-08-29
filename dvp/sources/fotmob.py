@@ -10,13 +10,18 @@ aanvallende middenvelders · aanvallers.
 from __future__ import annotations
 
 import datetime as _dt
+import urllib.parse
 
 from .. import config
 from ..http_client import get_json_impersonated as _get
 
 DATA = "https://www.fotmob.com/api/data"
 SITE = "https://www.fotmob.com"
+SEARCH = "https://apigw.fotmob.com/searchapi/suggest"
+
+# Actieve ploeg; bovenaan fetch() gezet (verversing draait geserialiseerd).
 TEAM = config.FOTMOB_TEAM_ID
+CCODE3 = "BEL"
 
 BANDEN = ["GK", "DEF", "DM", "MID", "AM", "FWD"]
 
@@ -99,9 +104,29 @@ def _match(match_id: int | str) -> dict | None:
 
 def _team_overview(team_id: int | str) -> dict | None:
     try:
-        return _get(f"{DATA}/teams?id={team_id}&ccode3=BEL", key="fotmob")
+        return _get(f"{DATA}/teams?id={team_id}&ccode3={CCODE3}", key="fotmob")
     except Exception:
         return None
+
+
+def zoek_team(naam: str) -> list[dict]:
+    """FotMob-ploegen die bij ``naam`` passen: [{id, naam, competitie}]."""
+    try:
+        data = _get(f"{SEARCH}?term={urllib.parse.quote(naam)}", key="fotmob")
+    except Exception:
+        return []
+    uit: list[dict] = []
+    for blok in data.get("teamSuggest", []):
+        for opt in blok.get("options", []):
+            tekst = opt.get("text", "")
+            tid = (opt.get("payload") or {}).get("id")
+            if "|" in tekst and tid:
+                uit.append({
+                    "id": int(tid),
+                    "naam": tekst.rsplit("|", 1)[0],
+                    "competitie": (opt.get("payload") or {}).get("leagueName", ""),
+                })
+    return uit
 
 
 def _kant(md: dict, team_id: int) -> str:
@@ -166,11 +191,18 @@ def abs_dagen(a: str, b: str) -> int:
         return 99
 
 
-def fetch(vorige_hint: dict | None = None) -> dict:
+def fetch(vorige_hint: dict | None = None, ploeg: dict | None = None) -> dict:
+    global TEAM, CCODE3
+    TEAM = (ploeg or {}).get("fotmob_id") or config.FOTMOB_TEAM_ID
+    CCODE3 = (ploeg or {}).get("fotmob_ccode3") or "BEL"
+
     resultaat: dict = {
         "opgehaald_op": _dt.datetime.now().isoformat(timespec="seconds"),
         "beschikbaar": False,
     }
+    if not TEAM:
+        resultaat["reden"] = "geen FotMob-ploeg ingesteld"
+        return resultaat
     ov = _team_overview(TEAM)
     if not ov:
         resultaat["reden"] = "FotMob niet bereikbaar"

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/static/logo.png">
+<title>{{ app_naam }} — instellingen</title>
+<style>
+  :root{color-scheme:dark;--rood:#ff4d67;--inkt:#e7e9ee;--grijs:#8a93a3;--lijn:#2a2f3a;
+        --vlak:#171a21;--vlak-2:#1e222b;--bg:#0e1014;--goed:#4ade80}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 system-ui,"Segoe UI",Roboto,sans-serif;color:var(--inkt);background:var(--bg)}
+  main{max-width:640px;margin:0 auto;padding:34px 22px 80px}
+  h1{font-size:20px;margin:0 0 4px} a{color:var(--rood)}
+  p.sub{color:var(--grijs);margin:0 0 24px}
+  .kaart{background:var(--vlak);border:1px solid var(--lijn);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--grijs);margin:0 0 10px}
+  .rij{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--lijn)}
+  .rij:first-of-type{border-top:0}
+  .rij .meta{color:var(--grijs);font-size:13px}
+  button{background:var(--vlak-2);color:var(--inkt);border:1px solid var(--lijn);border-radius:8px;
+        padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+  button.rood{background:var(--rood);color:#12151a;border:0;font-weight:700}
+  form.inline{display:inline}
+  .huidig{color:var(--goed);font-weight:700}
+</style>
+</head>
+<body>
+<main>
+  <h1>Instellingen</h1>
+  <p class="sub"><a href="/">← terug naar de tool</a></p>
+
+  <div class="kaart">
+    <h2>Huidige ploeg</h2>
+    <div class="rij">
+      <span><span class="huidig">{{ actieve_ploeg.naam }}</span>
+        <span class="meta">{{ actieve_ploeg.competitie.naam }}</span></span>
+      <form class="inline" method="post" action="/wissel-ploeg">
+        <input type="hidden" name="naar" value="kiezer">
+        <button class="rood" type="submit">Andere ploeg kiezen</button>
+      </form>
+    </div>
+  </div>
+
+  {% if favorieten|length > 1 %}
+  <div class="kaart">
+    <h2>Favorieten</h2>
+    {% for f in favorieten %}
+      <div class="rij">
+        <span>{{ f.naam }}
+          {%- if f.competitie and f.competitie.naam %} <span class="meta">{{ f.competitie.naam }}</span>{% endif %}
+          {%- if f.sofascore_id == actieve_ploeg.sofascore_id %} <span class="huidig">· actief</span>{% endif %}
+        </span>
+        <span>
+          {% if f.sofascore_id != actieve_ploeg.sofascore_id %}
+          <form class="inline" method="post" action="/wissel-ploeg">
+            <input type="hidden" name="index" value="{{ loop.index0 }}">
+            <button type="submit">Maak actief</button>
+          </form>
+          <form class="inline" method="post" action="/favoriet">
+            <input type="hidden" name="index" value="{{ loop.index0 }}">
+            <input type="hidden" name="actie" value="weg">
+            <button type="submit">Verwijder</button>
+          </form>
+          {% endif %}
+        </span>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <p class="sub" style="margin-top:20px">
+    Niet-gekoppelde spelersnamen tussen bronnen los je op in de tab <em>Diagnose</em> in de tool zelf.
+    {% if versie %}<br>Versie {{ versie }}.{% endif %}
+  </p>
+</main>
+</body>
+</html>
