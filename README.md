@@ -86,9 +86,19 @@ installatieprogramma dat alles meebrengt.
 powershell -ExecutionPolicy Bypass -File installer\bouw-installer.ps1
 ```
 
+Of alles ineens (Windows + Mac, DVP + Aftrap, na de tests):
+
+```bash
+powershell -ExecutionPolicy Bypass -File installer\bouw-alles.ps1
+```
+
 Dat haalt een ingebouwde Python + alle onderdelen op, stopt de app erbij en maakt
 één bestand: **`installer\uit\Installeer De Vierkante Paal.exe`** (± 25 MB).
 Nodig op deze bouw-pc: internet (eenmalig) en Python in PATH.
+
+> **OneDrive-tip:** `installer\build`, `installer\build-mac`, `installer\cache` en
+> `installer\uit` zijn samen ± 250 MB tijdelijke bestanden. Zet die vier mappen in
+> OneDrive op *"altijd behouden op dit apparaat"* uit, of sluit ze uit van sync.
 
 **Delen:** stuur dat `.exe` (samen met `installer\LEESMIJ-redactie.txt`) via
 WeTransfer, Google Drive of OneDrive. Mail blokkeert `.exe`-bijlagen meestal.
@@ -184,12 +194,24 @@ Instellingen (club-id's, seizoen, speler-aliassen) staan in `dvp/config.py`.
 De 10 competities voor de generieke variant staan in `dvp/competities.py`;
 welke variant er draait wordt bepaald door `dvp/merk.py` (leest `merk.json`).
 
+## Tests
+
+```bash
+py -m unittest discover -s tests
+```
+
+De scrapers draaien tegen **opgenomen responses** (`tests/fixtures/`), dus geen
+internet nodig. Faalt een test na een sitewijziging? `py tests\opnemen.py` vernieuwt
+de fixtures. Zie `tests/LEESMIJ.md`.
+
 ## Mappen
 
 ```
 start.bat                 eenmalige installatie + starten (ontwikkelopstelling)
 snelkoppeling-maken.bat   bureaublad-icoon + (optioneel) meestarten met Windows
+tests/                    unittest-suite (scrapers tegen opgenomen responses)
 installer/                installatieprogramma om te delen met redactieleden
+  bouw-alles.ps1         tests + alle 4 de deelbestanden in één keer
   bouw-installer.ps1      maakt "Installeer De Vierkante Paal.exe" (Windows)
   installeer.ps1          de installatiewizard (draait op de doel-pc)
   uninstall.ps1           verwijderscript (komt mee in de installatie)

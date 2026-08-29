@@ -4,6 +4,7 @@ voor de verschil-kolom, handmatige scores en bewaarde afleveringen bij.
 
 from __future__ import annotations
 
+import contextlib
 import datetime as _dt
 import json
 import re as _re
@@ -54,12 +55,18 @@ def _now() -> str:
     return _dt.datetime.now().isoformat(timespec="seconds")
 
 
-def _connect() -> sqlite3.Connection:
+@contextlib.contextmanager
+def _connect():
+    """Verbinding die bij het verlaten van het ``with``-blok commit én sluit."""
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(config.DB_PATH, timeout=15)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA busy_timeout=15000")
-    return conn
+    try:
+        with conn:                # commit / rollback
+            yield conn
+    finally:
+        conn.close()
 
 
 def init() -> None:

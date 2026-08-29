@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as _dt
 import urllib.parse
 
 from . import config, merk, ploeg, store
@@ -207,8 +208,6 @@ def _diagnose(overzicht: dict) -> dict:
 
 def _bron_status() -> dict:
     """Per bron: 'ok' | 'verouderd' (>8u) | 'leeg' (nooit) | 'fout'."""
-    import datetime as _dt
-
     fouten = store.get_kv("fouten", {}) or {}
     uit: dict[str, str] = {}
     for naam in ("sofascore", "transfermarkt", "fotmob", "voorbeschouwing"):

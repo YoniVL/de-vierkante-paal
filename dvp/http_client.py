@@ -16,7 +16,7 @@ from . import config
 _last_call: dict[str, float] = {}
 
 # Pauze (s) tussen opeenvolgende requests naar dezelfde bron.
-_PAUZE = {"sofascore": 0.35, "fotmob": 0.5, "transfermarkt": 0.8, "livescore": 0.8}
+_PAUZE = {"sofascore": 0.35, "fotmob": 0.5, "transfermarkt": 0.8}
 
 
 def _throttle(key: str) -> None:
