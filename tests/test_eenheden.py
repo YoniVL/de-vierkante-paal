@@ -95,6 +95,50 @@ class MerkTests(unittest.TestCase):
         m.merk.cache_clear()
 
 
+class PoortTests(unittest.TestCase):
+    """DVP en Aftrap moeten naast elkaar kunnen draaien -> verschillende poort."""
+
+    def setUp(self):
+        self._orig = config.BASE_DIR
+        self._env = config.os.environ.pop("DVP_PORT", None)
+
+    def tearDown(self):
+        config.BASE_DIR = self._orig
+        if self._env is not None:
+            config.os.environ["DVP_PORT"] = self._env
+
+    def _tmp(self, **bestanden):
+        tmp = Path(tempfile.mkdtemp(prefix="dvp_poort_"))
+        for naam, inhoud in bestanden.items():
+            (tmp / naam.replace("_", ".")).write_text(inhoud, encoding="utf-8")
+        config.BASE_DIR = tmp
+        return tmp
+
+    def test_geen_merk_json_is_8756(self):
+        self._tmp()
+        self.assertEqual(config._poort(), 8756)
+
+    def test_aftrap_merk_json_poort(self):
+        self._tmp(merk_json=json.dumps({"app_naam": "Aftrap", "poort": 8757}))
+        self.assertEqual(config._poort(), 8757)
+
+    def test_merk_json_zonder_poort_is_8756(self):
+        self._tmp(merk_json=json.dumps({"app_naam": "Aftrap"}))
+        self.assertEqual(config._poort(), 8756)
+
+    def test_poort_txt_wint(self):
+        self._tmp(poort_txt="9001", merk_json=json.dumps({"poort": 8757}))
+        self.assertEqual(config._poort(), 9001)
+
+    def test_env_wint_altijd(self):
+        self._tmp(merk_json=json.dumps({"poort": 8757}))
+        config.os.environ["DVP_PORT"] = "12345"
+        try:
+            self.assertEqual(config._poort(), 12345)
+        finally:
+            config.os.environ.pop("DVP_PORT", None)
+
+
 class PloegTests(unittest.TestCase):
     def setUp(self):
         tmp = Path(tempfile.mkdtemp(prefix="dvp_ploeg_"))

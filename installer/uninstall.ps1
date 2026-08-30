@@ -13,6 +13,7 @@ $APPNAAM = 'De Vierkante Paal'
 try {
     $m = Get-Content (Join-Path $DOEL 'merk.json') -Raw | ConvertFrom-Json
     if ($m.app_naam) { $APPNAAM = $m.app_naam }
+    if ($m.poort)    { $PORT = [int]$m.poort }
 } catch { }
 $REGKEY = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\' + ($APPNAAM -replace '[^A-Za-z0-9]', '')
 

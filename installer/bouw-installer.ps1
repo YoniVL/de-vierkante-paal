@@ -89,7 +89,7 @@ $versie = Get-Date -Format 'yyyy.MM.dd'
 Set-Content -Path (Join-Path $payload 'versie.txt') -Value $versie -Encoding ASCII
 Copy-Item (Join-Path $inst 'uninstall.ps1') (Join-Path $payload 'uninstall.ps1')
 if ($Variant -eq 'generiek') {
-    '{ "app_naam": "Aftrap", "toon_kiezer": true, "whoscored": false, "vaste_ploeg": null }' |
+    '{ "app_naam": "Aftrap", "toon_kiezer": true, "whoscored": false, "vaste_ploeg": null, "poort": 8757 }' |
         Set-Content -Path (Join-Path $payload 'merk.json') -Encoding ASCII
     Copy-Item (Join-Path $inst 'assets\aftrap-logo.png') (Join-Path $dst 'static\logo.png') -Force
     Write-Host "  merk.json + Aftrap-logo"

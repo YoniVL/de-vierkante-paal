@@ -14,7 +14,7 @@ $HIER      = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ZIP       = Join-Path $HIER 'dvp-pakket.zip'
 $LOGO      = Join-Path $HIER 'logo.png'
 
-# App-naam + versie uit het pakket lezen (merk.json / versie.txt in de zip)
+# App-naam + poort + versie uit het pakket lezen (merk.json / versie.txt in de zip)
 $APPNAAM = 'De Vierkante Paal'
 $script:versieNieuw = ''
 if (Test-Path $ZIP) {
@@ -27,7 +27,11 @@ if (Test-Path $ZIP) {
             $sr = New-Object System.IO.StreamReader($e.Open())
             $inhoud = $sr.ReadToEnd(); $sr.Close()
             if ($naam -eq 'merk.json') {
-                try { $m = $inhoud | ConvertFrom-Json; if ($m.app_naam) { $APPNAAM = $m.app_naam } } catch { }
+                try {
+                    $m = $inhoud | ConvertFrom-Json
+                    if ($m.app_naam) { $APPNAAM = $m.app_naam }
+                    if ($m.poort)    { $PORT = [int]$m.poort }
+                } catch { }
             } else {
                 $script:versieNieuw = $inhoud.Trim()
             }
@@ -201,7 +205,7 @@ function Herbouw-Checks {
     if (-not $genoeg) { $script:checksOk = $false }
 
     $poortVrij = -not (Test-PoortInGebruik $PORT)
-    Voeg-CheckRij "Poort $PORT vrij" $poortVrij $(if (-not $poortVrij) { 'de tool draait mogelijk al - dat is geen probleem' } else { '' })
+    Voeg-CheckRij "Poort $PORT vrij" $poortVrij $(if (-not $poortVrij) { "$APPNAAM draait mogelijk al - dat is geen probleem" } else { '' })
 
     if ($script:versieNieuw) {
         $r = New-Object System.Windows.Forms.Label

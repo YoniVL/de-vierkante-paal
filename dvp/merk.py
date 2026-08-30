@@ -3,7 +3,10 @@
 
 De build-scripts leggen optioneel een ``merk.json`` naast de app:
 
-    {"app_naam": "Aftrap", "toon_kiezer": true, "vaste_ploeg": null}
+    {"app_naam": "Aftrap", "toon_kiezer": true, "vaste_ploeg": null, "poort": 8757}
+
+De poort wordt door config.py gelezen (niet hier), zodat DVP (8756) en Aftrap
+(8757) tegelijk kunnen draaien.
 
 Geen bestand  ->  DVP-gedrag (ontwikkelopstelling en de bestaande Windows-build).
 """

@@ -274,7 +274,7 @@ def main() -> None:
     mz.file(f"{appdir}/versie.txt", VERSIE.encode("utf-8"))
     if VARIANT == "generiek":
         mz.file(f"{appdir}/merk.json",
-                b'{ "app_naam": "Aftrap", "toon_kiezer": true, "whoscored": false, "vaste_ploeg": null }')
+                b'{ "app_naam": "Aftrap", "toon_kiezer": true, "whoscored": false, "vaste_ploeg": null, "poort": 8757 }')
         add_tree(mz, PROJ / "dvp", f"{appdir}/dvp", skip={"static/logo.png"})
         mz.file(f"{appdir}/dvp/static/logo.png", logo_png.read_bytes())  # Aftrap-logo
     else:

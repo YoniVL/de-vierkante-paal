@@ -28,6 +28,12 @@ def _poort() -> int:
     try:
         return int((BASE / "poort.txt").read_text().strip())
     except (OSError, ValueError):
+        pass
+    try:
+        import json
+        p = json.loads((BASE / "merk.json").read_text(encoding="utf-8-sig")).get("poort")
+        return int(p) if p else 8756
+    except (OSError, ValueError, TypeError):
         return 8756
 
 

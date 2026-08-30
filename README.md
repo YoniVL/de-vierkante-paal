@@ -157,9 +157,9 @@ Transfermarkt, en de tool haalt de data op. Wisselen van ploeg kan bovenaan; de
 bewaarde afleveringen blijven per ploeg gescheiden.
 
 De verschillen tussen de twee varianten zitten volledig in **`merk.json`** (wordt door
-het build-script in het pakket gezet). Zonder `merk.json` = de DVP-versie. Beide
-kunnen naast elkaar geïnstalleerd staan, maar draaien op dezelfde poort 8756 — dus
-één tegelijk gebruiken.
+het build-script in het pakket gezet). Zonder `merk.json` = de DVP-versie. DVP draait op
+poort **8756**, Aftrap op **8757** (via `"poort"` in `merk.json`), zodat ze naast elkaar
+geïnstalleerd én tegelijk kunnen draaien.
 
 ## Gebruik per aflevering
 

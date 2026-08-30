@@ -32,24 +32,31 @@ PRO_LEAGUE_TM: dict[str, tuple[int, str]] = {
     "Club Brugge KV": (2282, "fc-brugge"),
 }
 
+# --- Opslag / basismap ------------------------------------------------------
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 # --- Server ------------------------------------------------------------------
 HOST = "127.0.0.1"
-# Poort: standaard 8756. Te overschrijven met de omgevingsvariabele DVP_PORT
-# of een bestandje poort.txt naast de app.
+# Poort: standaard 8756 (DVP), of wat merk.json onder "poort" zet (Aftrap: 8757),
+# zodat beide varianten naast elkaar kunnen draaien. Te overschrijven met de
+# omgevingsvariabele DVP_PORT of een bestandje poort.txt naast de app.
 def _poort() -> int:
     ev = os.environ.get("DVP_PORT", "")
     if ev.isdigit():
         return int(ev)
     try:
-        return int((Path(__file__).resolve().parent.parent / "poort.txt").read_text().strip())
+        return int((BASE_DIR / "poort.txt").read_text().strip())
     except (OSError, ValueError):
+        pass
+    try:
+        import json
+        p = json.loads((BASE_DIR / "merk.json").read_text(encoding="utf-8-sig")).get("poort")
+        return int(p) if p else 8756
+    except (OSError, ValueError, TypeError):
         return 8756
 
 
 PORT = _poort()
-
-# --- Opslag -----------------------------------------------------------------
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Waar data/afleveringen geschreven worden. Op Windows/Linux naast de app;
 # op macOS mag je niet in de .app-bundel schrijven -> Application Support.
