@@ -206,6 +206,132 @@ def _diagnose(overzicht: dict) -> dict:
     }
 
 
+def _praatpunten(overzicht: dict) -> list[str]:
+    """Kant-en-klare gesprekstof: vat de al opgehaalde cijfers samen tot losse zinnen.
+    Puur samenvatten van bestaande data — geen extra requests."""
+    eigen = ploeg.actieve().get("naam") or config.CLUB_NAAM
+    so = overzicht.get("sofascore") or {}
+    vorige = so.get("vorige") or {}
+    volgende = so.get("volgende") or {}
+    vb = so.get("voorbeschouwing") or {}
+    ve = overzicht.get("voorbeschouwing_extra") or {}
+    teg = (volgende.get("tegenstander") or {}).get("naam")
+    klassement = vb.get("klassement") or []
+    vd = vb.get("vorm_detail") or {}
+    uit: list[str] = []
+
+    # vorige wedstrijd
+    t, u = vorige.get("thuis") or {}, vorige.get("uit") or {}
+    if t.get("score") is not None and u.get("score") is not None:
+        ant_thuis = vorige.get("antwerp_thuis")
+        eg, og = (t["score"], u["score"]) if ant_thuis else (u["score"], t["score"])
+        opp = (u if ant_thuis else t).get("naam") or "de tegenstander"
+        wdl = "won" if eg > og else "verloor" if eg < og else "speelde gelijk"
+        waar = "thuis" if ant_thuis else "uit"
+        uit.append(f"📅 Vorige match: {eigen} {wdl} {waar} {eg}–{og} tegen {opp}"
+                   + (f" ({vorige.get('competitie')})" if vorige.get("competitie") else "") + ".")
+
+    # eigen klassementspositie + kloof
+    eigen_rij = next((r for r in klassement if r.get("antwerp")), None)
+    if eigen_rij and eigen_rij.get("positie"):
+        pos = eigen_rij["positie"]
+        gesp = eigen_rij["gespeeld"]
+        zin = (f"📊 {eigen} staat {pos}e met {eigen_rij['punten']} punten "
+               f"na {gesp} {'match' if gesp == 1 else 'matchen'}")
+
+        def _kloof(buur: dict | None) -> str | None:
+            if not buur:
+                return None
+            d = buur["punten"] - eigen_rij["punten"]
+            if d > 0:
+                return f"{d} achter {buur['team']} ({buur['positie']}e)"
+            if d < 0:
+                return f"{-d} voor op {buur['team']} ({buur['positie']}e)"
+            return f"gelijk met {buur['team']} ({buur['positie']}e)"
+
+        stukjes = [s for s in (
+            _kloof(next((r for r in klassement if r.get("positie") == pos - 1), None)),
+            _kloof(next((r for r in klassement if r.get("positie") == pos + 1), None)),
+        ) if s]
+        uit.append(zin + (" — " + ", ".join(stukjes) if stukjes else "") + ".")
+
+    # eigen vorm
+    eigen_v = vd.get("antwerp") or {}
+    eigen_vorm = (eigen_v.get("laatste5") or {}).get("vorm")
+    if eigen_vorm:
+        zin = f"📈 Vorm {eigen} (laatste 5): {eigen_vorm}"
+        if eigen_v.get("ongeslagen", 0) >= 3:
+            zin += f" — {eigen_v['ongeslagen']} matchen ongeslagen"
+        uit.append(zin + ".")
+
+    # tegenstander: positie + vorm
+    if teg:
+        teg_rij = next((r for r in klassement if r.get("tegenstander")), None)
+        teg_v = vd.get("tegenstander") or {}
+        teg_vorm = (teg_v.get("laatste5") or {}).get("vorm")
+        stukjes = []
+        if teg_rij and teg_rij.get("positie"):
+            stukjes.append(f"{teg_rij['positie']}e met {teg_rij['punten']} ptn")
+        if teg_vorm:
+            stukjes.append(f"vorm {teg_vorm}")
+        if teg_v.get("ongeslagen", 0) >= 3:
+            stukjes.append(f"{teg_v['ongeslagen']}x ongeslagen")
+        if stukjes:
+            uit.append(f"🔮 Tegenstander {teg}: " + ", ".join(stukjes) + ".")
+
+    # onderlinge balans
+    h = vb.get("h2h") or {}
+    if h.get("aantal"):
+        uit.append(f"⚔️ Onderling ({h['aantal']} duels): {h['antwerp_winst']}× {eigen}, "
+                   f"{h['gelijk']}× gelijk, {h['tegenstander_winst']}× {teg}.")
+
+    # scheidsrechter
+    ref = vb.get("scheidsrechter") or {}
+    if ref.get("naam"):
+        uit.append(f"🧑‍⚖️ Ref {ref['naam']}: {ref.get('geel_per_match', '?')} geel en "
+                   f"{ref.get('rood_per_match', '?')} rood per match "
+                   f"({ref.get('matchen', '?')} matchen).")
+
+    # ex-spelers
+    con = ve.get("connecties") or {}
+    if con.get("ex_antwerp_bij_tegenstander"):
+        uit.append(f"↩️ Ex-{eigen} bij {teg}: "
+                   + ", ".join(c["speler"] for c in con["ex_antwerp_bij_tegenstander"]) + ".")
+    if con.get("ex_tegenstander_bij_antwerp"):
+        uit.append(f"↪️ Ex-{teg} bij {eigen}: "
+                   + ", ".join(c["speler"] for c in con["ex_tegenstander_bij_antwerp"]) + ".")
+
+    # afwezigen
+    def _weg(blok: dict) -> list[str]:
+        return ([p["speler"] for p in blok.get("geschorst", [])]
+                + [p["speler"] for p in blok.get("geblesseerd", [])])
+
+    eigen_weg = _weg((overzicht.get("transfermarkt") or {}).get("uitval") or {})
+    if eigen_weg:
+        uit.append(f"🚑 Afwezig/onzeker bij {eigen}: " + ", ".join(eigen_weg[:6])
+                   + ("…" if len(eigen_weg) > 6 else "") + ".")
+    teg_weg = _weg(ve.get("uitval") or {})
+    if teg_weg:
+        uit.append(f"🚑 Afwezig bij {teg}: " + ", ".join(teg_weg[:6])
+                   + ("…" if len(teg_weg) > 6 else "") + ".")
+
+    # topschutter eigen ploeg
+    scorers = [r for r in (overzicht.get("stattabel") or []) if r.get("goals")]
+    if scorers:
+        top = max(scorers, key=lambda r: r["goals"])
+        if top["goals"] >= 2:
+            uit.append(f"⚽ Meeste goals {eigen}: {top['speler']} ({top['goals']})"
+                       + (f", {top['assists']} assists" if top.get("assists") else "") + ".")
+
+    # gevaarlijkste tegenstander
+    sh_goals = (vb.get("tegenstander_sterkhouders") or {}).get("goals") or []
+    if sh_goals and sh_goals[0].get("waarde"):
+        s = sh_goals[0]
+        uit.append(f"⭐ Gevaarlijkste man {teg}: {s['naam']} ({s['waarde']} goals).")
+
+    return uit
+
+
 def _bron_status() -> dict:
     """Per bron: 'ok' | 'verouderd' (>8u) | 'leeg' (nooit) | 'fout'."""
     fouten = store.get_kv("fouten", {}) or {}
@@ -260,4 +386,5 @@ def bouw_overzicht() -> dict:
         "bron_status": _bron_status(),
     }
     overzicht["diagnose"] = _diagnose(overzicht)
+    overzicht["praatpunten"] = _praatpunten(overzicht)
     return overzicht

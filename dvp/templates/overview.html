@@ -184,6 +184,22 @@
   .uitval-lijn.schors{background:var(--slecht-bg);border:1px solid rgba(248,113,113,.32)}
   .uitval-lijn.bless{background:rgba(245,166,53,.13);border:1px solid rgba(245,166,53,.3)}
 
+  .praatpunten h2{margin-bottom:12px}
+  .praatpunten ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+  .praatpunten li{background:var(--vlak-2);border:1px solid var(--lijn);border-left:3px solid var(--rood);
+       border-radius:8px;padding:9px 13px;font-size:14px;line-height:1.45}
+  .praatpunten .leeg{color:var(--grijs);font-size:13px}
+
+  .hlp{font-size:14px;line-height:1.6;max-width:760px}
+  .hlp h3{margin-top:22px}
+  .hlp p{margin:6px 0}
+  .hlp ul{margin:6px 0;padding-left:20px}
+  .hlp li{margin:3px 0}
+  .hlp code{background:var(--vlak-2);border:1px solid var(--lijn);border-radius:4px;padding:1px 5px;font-size:12.5px}
+  .hlp .ic{font-weight:700;white-space:nowrap}
+  .hlp .bs-ok{color:var(--goed)} .hlp .bs-verouderd{color:#f0b429}
+  .hlp .bs-leeg{color:var(--grijs)} .hlp .bs-fout{color:var(--slecht)}
+
   .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 16px}
   .tabs button{background:var(--vlak);border:1px solid var(--lijn);color:var(--grijs);border-radius:8px;
                padding:8px 13px;font-size:12.5px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.03em}
@@ -373,12 +389,23 @@
     </div>
   </section>
 
+  {% if o.praatpunten %}
+  <section class="praatpunten">
+    <h2>Praatpunten</h2>
+    <ul>
+      {% for p in o.praatpunten %}<li>{{ p }}</li>{% endfor %}
+    </ul>
+    <p class="leeg">Automatisch samengevat uit de opgehaalde cijfers. Staat ook bovenaan de export.</p>
+  </section>
+  {% endif %}
+
   <nav class="tabs">
     <button data-tab="wedstrijd" class="actief">Vorige wedstrijd</button>
     <button data-tab="voorbeschouwing">Voorbeschouwing</button>
     <button data-tab="statistieken">Statistieken</button>
     <button data-tab="diagnose">Diagnose</button>
     <button data-tab="export">Export</button>
+    <button data-tab="handleiding">Handleiding</button>
   </nav>
 
   {% set v = o.sofascore.vorige %}
@@ -928,6 +955,86 @@
         {% endfor %}
       </ul>
     {% endif %}
+  </section>
+  </div>
+
+  <div class="tab" data-tab="handleiding">
+  <section>
+    <h2>Handleiding</h2>
+    <div class="hlp">
+      <p>Deze tool verzamelt per aflevering de wedstrijddata rond
+      {% if toon_kiezer %}de gekozen ploeg{% else %}{{ club }}{% endif %}:
+      de vorige wedstrijd, de voorbeschouwing op de volgende tegenstander, spelerscores
+      en de seizoensstatistieken. Alles komt van Sofascore, FotMob en Transfermarkt.</p>
+
+      <h3>Zo bereid je een aflevering voor</h3>
+      <ul>
+        <li>Klik bovenaan <strong>↻ Ververs alles</strong> en wacht tot elke stap ✓ toont.</li>
+        <li>Klik daarna één keer <span class="ic">voorbeschouwing</span> — die haalt de zwaardere
+            extra's op (blessures/schorsingen van de tegenstander, ex-spelers tussen beide clubs).
+            Zit apart omdat het ~10 Transfermarkt-pagina's ophaalt; blijft 24u geldig.</li>
+        <li>Loop de tabbladen <strong>Vorige wedstrijd</strong>, <strong>Voorbeschouwing</strong> en
+            <strong>Statistieken</strong> door.</li>
+        {% if toon_whoscored %}<li>Vul in de spelerscoretabel eventueel de WhoScored-cijfers zelf in
+            en klik <strong>Scores bewaren</strong>. Die blijven bewaard.</li>{% endif %}
+        <li>In het tabblad <strong>Export</strong>: <strong>Kopieer</strong> de tekst voor de
+            podcastnotities, of klik <strong>Bewaren</strong> om de aflevering op te slaan.</li>
+      </ul>
+
+      <h3>Praatpunten</h3>
+      <p>Het blok bovenaan de pagina vat de belangrijkste cijfers samen tot losse zinnen
+      (stand + kloof, vorm, onderlinge balans, scheidsrechter, ex-spelers, afwezigen, topschutters).
+      Het wordt automatisch opgebouwd en staat ook bovenaan de export. Niets in te stellen.</p>
+
+      <h3>De knoppen bovenaan</h3>
+      <ul>
+        <li><strong>Ververs alles</strong> — Sofascore, Transfermarkt en FotMob opnieuw ophalen.</li>
+        <li><strong>sofascore / fotmob / transfermarkt</strong> — enkel die ene bron verversen.</li>
+        <li><strong>voorbeschouwing</strong> — de extra tegenstander-info (zie hierboven).</li>
+        <li><strong>export .md</strong> — de ruwe tekst in een nieuw tabblad.</li>
+        <li><strong>afdrukken / PDF</strong> — opent een propere pagina; kies daar "Opslaan als PDF".</li>
+      </ul>
+
+      <h3>De bronstatus (de gekleurde regel)</h3>
+      <ul>
+        <li><span class="ic bs bs-ok">✓</span> up-to-date.</li>
+        <li><span class="ic bs bs-verouderd">⏱</span> ouder dan 8 uur — even verversen.</li>
+        <li><span class="ic bs bs-leeg">–</span> nog nooit opgehaald.</li>
+        <li><span class="ic bs bs-fout">✕</span> ophalen mislukte, of de bron gaf geen bruikbare
+            data terug (site mogelijk aangepast).</li>
+      </ul>
+
+      <h3>Verkeerde wedstrijd in beeld?</h3>
+      <p>Bovenaan het tabblad <strong>Vorige wedstrijd</strong> staat een keuzelijst
+      "Welke wedstrijd". Standaard toont de tool de recentste; kies er handmatig een andere
+      als dat nodig is (bv. na een bekermatch).</p>
+
+      <h3>Een speler wordt niet herkend</h3>
+      <p>Ga naar het tabblad <strong>Diagnose</strong>. Staat een speler bij "zonder
+      Transfermarkt-koppeling", open dan zijn Transfermarkt-profiel en plak de link in het veld
+      ernaast. De koppeling wordt onthouden.</p>
+
+      {% if toon_kiezer %}
+      <h3>Van ploeg wisselen</h3>
+      <p>Klik bovenaan op de ploegnaam. Een ploeg die je al eens koos, wissel je met één klik;
+      een nieuwe ploeg kies je via "Andere ploeg" (competitie → ploeg) en bevestig je op een
+      kort scherm. Met 📌 prik je een ploeg vast zodat ze bovenaan blijft staan; de rest
+      verschijnt onder "Recent". Beheer alles via <a href="/instellingen">instellingen</a>.</p>
+      {% endif %}
+
+      <h3>De tool afsluiten</h3>
+      <p>Sluit je het tabblad, dan sluit de tool zichzelf even later af. Wil je dat ze blijft
+      draaien, zet dan "op de achtergrond laten draaien" aan. Met <strong>✕ Tool afsluiten</strong>
+      stop je ze meteen.</p>
+
+      <h3>Er gaat iets mis</h3>
+      <ul>
+        <li>Een bron op ✕ of een rode melding: klik nog eens op verversen — vaak een tijdelijke
+            hapering.</li>
+        <li>Blijft het fout, dan is de betreffende site waarschijnlijk aangepast. Meld het,
+            dan wordt de tool bijgewerkt.</li>
+      </ul>
+    </div>
   </section>
   </div>
 

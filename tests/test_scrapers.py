@@ -109,6 +109,13 @@ class ScraperTests(unittest.TestCase):
         self.assertGreaterEqual(len(met_link), len(o["scoretabel"]) // 2)
         self.assertIn("diagnose", o)
 
+    def test_praatpunten(self):
+        pp = self.ov["praatpunten"]
+        self.assertGreaterEqual(len(pp), 4)
+        self.assertTrue(all(isinstance(x, str) and x.strip() for x in pp))
+        # de uitslag van de vorige match hoort erbij te staan
+        self.assertTrue(any("Vorige match" in x for x in pp))
+
 
 class ScraperTestsArsenal(ScraperTests):
     scenario = "arsenal"

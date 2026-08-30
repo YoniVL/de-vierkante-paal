@@ -48,6 +48,12 @@ def naar_markdown(o: dict) -> str:
     _titel = ploeg.actieve().get("naam") if ploeg.is_gekozen() else _app_naam()
     r.append(f"# {_titel} — voorbereiding\n")
 
+    praatpunten = o.get("praatpunten") or []
+    if praatpunten:
+        r.append("## Praatpunten\n")
+        r.extend(f"- {p}" for p in praatpunten)
+        r.append("")
+
     # 1. Vorige wedstrijd
     if vorige:
         t, u = vorige["thuis"], vorige["uit"]

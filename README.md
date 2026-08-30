@@ -4,7 +4,12 @@ Lokale tool om een aflevering van de podcast rond **Royal Antwerp FC** voor te b
 Ze verzamelt automatisch de feiten en cijfers; de teksten schrijf je zelf.
 
 De tool is verdeeld in **tabbladen** bovenaan: Vorige wedstrijd · Voorbeschouwing ·
-Statistieken · Diagnose · Export.
+Statistieken · Diagnose · Export · Handleiding.
+
+Bovenaan de pagina staat een **Praatpunten**-blok: de belangrijkste cijfers (stand + kloof,
+vorm, onderlinge balans, scheidsrechter, ex-spelers, afwezigen, topschutters) automatisch
+samengevat tot losse zinnen. Het staat ook bovenaan de export. In het tabblad **Handleiding**
+staat een korte uitleg voor redactieleden.
 
 ## Wat de tool toont
 
