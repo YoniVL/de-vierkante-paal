@@ -184,11 +184,19 @@
   .uitval-lijn.schors{background:var(--slecht-bg);border:1px solid rgba(248,113,113,.32)}
   .uitval-lijn.bless{background:rgba(245,166,53,.13);border:1px solid rgba(245,166,53,.3)}
 
-  .praatpunten h2{margin-bottom:12px}
-  .praatpunten ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+  .praatpunten{padding:0}
+  .praatpunten > details > summary{cursor:pointer;list-style:none;padding:14px 20px;display:flex;
+       align-items:center;gap:10px}
+  .praatpunten > details > summary::-webkit-details-marker{display:none}
+  .praatpunten > details > summary::before{content:"▸";color:var(--rood);font-size:12px}
+  .praatpunten > details[open] > summary::before{content:"▾"}
+  .praatpunten .pp-titel{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--rood);font-weight:700}
+  .praatpunten .pp-tel{background:var(--vlak-2);border:1px solid var(--lijn);border-radius:10px;
+       font-size:11.5px;color:var(--grijs);font-weight:700;padding:1px 8px}
+  .praatpunten ul{list-style:none;margin:0;padding:0 20px;display:grid;gap:7px}
   .praatpunten li{background:var(--vlak-2);border:1px solid var(--lijn);border-left:3px solid var(--rood);
        border-radius:8px;padding:9px 13px;font-size:14px;line-height:1.45}
-  .praatpunten .leeg{color:var(--grijs);font-size:13px}
+  .praatpunten .leeg{color:var(--grijs);font-size:13px;padding:0 20px 14px}
 
   .hlp{font-size:14px;line-height:1.6;max-width:760px}
   .hlp h3{margin-top:22px}
@@ -391,11 +399,13 @@
 
   {% if o.praatpunten %}
   <section class="praatpunten">
-    <h2>Praatpunten</h2>
-    <ul>
-      {% for p in o.praatpunten %}<li>{{ p }}</li>{% endfor %}
-    </ul>
-    <p class="leeg">Automatisch samengevat uit de opgehaalde cijfers. Staat ook bovenaan de export.</p>
+    <details id="praatpunten">
+      <summary><span class="pp-titel">Praatpunten</span> <span class="pp-tel">{{ o.praatpunten|length }}</span></summary>
+      <ul>
+        {% for p in o.praatpunten %}<li>{{ p }}</li>{% endfor %}
+      </ul>
+      <p class="leeg">Automatisch samengevat uit de opgehaalde cijfers. Staat ook bovenaan de export.</p>
+    </details>
   </section>
   {% endif %}
 
@@ -1073,6 +1083,13 @@
     let start='wedstrijd';
     try{ const s=localStorage.getItem('dvp-tab'); if(s && knoppen.some(b=>b.dataset.tab===s)) start=s; }catch(e){}
     toon(start);
+  })();
+
+  // praatpunten: open/dicht onthouden (standaard dicht)
+  (function(){
+    const d=document.getElementById('praatpunten'); if(!d) return;
+    try{ d.open = localStorage.getItem('dvp-praatpunten')==='1'; }catch(e){}
+    d.addEventListener('toggle',()=>{ try{ localStorage.setItem('dvp-praatpunten', d.open?'1':'0'); }catch(e){} });
   })();
 
   // verversen op de achtergrond, met voortgang
