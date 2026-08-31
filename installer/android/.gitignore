@@ -1,0 +1,11 @@
+# Android / Gradle
+.gradle/
+build/
+app/build/
+local.properties
+*.apk
+captures/
+.cxx/
+
+# door de kopieer-taak gevuld vanuit ../../dvp
+app/src/main/python/dvp/

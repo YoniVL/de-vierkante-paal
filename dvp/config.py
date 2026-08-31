@@ -58,9 +58,13 @@ def _poort() -> int:
 
 PORT = _poort()
 
-# Waar data/afleveringen geschreven worden. Op Windows/Linux naast de app;
-# op macOS mag je niet in de .app-bundel schrijven -> Application Support.
-if sys.platform == "darwin":
+# Waar data/afleveringen geschreven worden. Naast de app (Windows/Linux),
+# op macOS in Application Support (niet in de .app-bundel), en op Android
+# geeft de app een schrijfbare map mee via DVP_DATA_DIR (de bronmap is daar
+# read-only).
+if os.environ.get("DVP_DATA_DIR"):
+    DATA_ROOT = Path(os.environ["DVP_DATA_DIR"])
+elif sys.platform == "darwin":
     DATA_ROOT = Path.home() / "Library" / "Application Support" / "De Vierkante Paal"
 else:
     DATA_ROOT = BASE_DIR
