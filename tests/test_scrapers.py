@@ -129,7 +129,20 @@ class ScraperTests(unittest.TestCase):
             self.assertEqual(len(dp["timing_voor"]), 6)
             self.assertEqual(sum(dp["timing_voor"]), dp["gescoord"]["totaal"])
             self.assertEqual(sum(dp["timing_tegen"]), dp["geincasseerd"]["totaal"])
+            # schotkwaliteit + posities voor het veldje
+            self.assertGreater(dp["schoten_voor"], 0)
+            self.assertGreater(dp["xg_per_schot_voor"], 0)
+            self.assertEqual(len(dp["punten_voor"]), dp["gescoord"]["totaal"]
+                             - dp["gescoord"]["fases"].get("Eigen doelpunt", 0))
+            for pt in dp["punten_voor"]:
+                self.assertIn("x", pt); self.assertIn("xg", pt); self.assertIn("fase", pt)
+            # aanvalszones ~ 100%
+            if dp["zones"]:
+                self.assertAlmostEqual(sum(dp["zones"].values()), 100, delta=3)
+            # strafschoppen uit de season-stats
+            self.assertIsNotNone(p["seizoen"]["pen_benut"])
             self.assertTrue(p["ranking"])
+            self.assertTrue(any(r["markering"] for r in p["ranking"]))
             self.assertTrue(p["selectie"]["waarde_totaal_m"] > 0)
         # aggregatie neemt het mee
         self.assertTrue(self.ov["teamstats"]["ploegen"])

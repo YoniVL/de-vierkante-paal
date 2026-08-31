@@ -233,6 +233,12 @@ def naar_markdown(o: dict) -> str:
                 if d:
                     r.append(f"- {veld.capitalize()}: {d['w']}W-{d['g']}G-{d['v']}V · "
                              f"{d['dp_voor']}-{d['dp_tegen']} · {d['punten']} ptn")
+            if s.get("pen_genomen") is not None:
+                r.append(f"- Strafschoppen: {s.get('pen_benut')}/{s.get('pen_genomen')} benut · "
+                         f"{s.get('pen_weg')} weggegeven ({s.get('pen_tegen')} tegen)")
+            hs = P.get("hoekschot")
+            if hs:
+                r.append(f"- Corners: {hs['corners']} · {hs['goals']} goal(s) uit corner ({hs['pct']}%)")
             dp = P.get("doelpunten")
             if dp and dp.get("matchen_met_data"):
                 gv = ", ".join(f"{k} {v}" for k, v in sorted(
@@ -241,13 +247,24 @@ def naar_markdown(o: dict) -> str:
                     dp["geincasseerd"]["fases"].items(), key=lambda x: -x[1]))
                 r.append(f"- Doelpunten gescoord ({dp['gescoord']['totaal']}): {gv or '–'}")
                 r.append(f"- Doelpunten geïncasseerd ({dp['geincasseerd']['totaal']}): {gi or '–'}")
+                r.append(f"- Schotkwaliteit: {dp.get('xg_per_schot_voor')} xG/schot voor · "
+                         f"{dp.get('xg_per_schot_tegen')} tegen")
                 r.append(f"- Timing goals voor/tegen per kwartier "
                          f"({' · '.join(dp['timing_labels'])}): "
                          f"{dp['timing_voor']} / {dp['timing_tegen']}")
+                z = dp.get("zones")
+                if z:
+                    r.append(f"- Aanvalszones: links {z['links']}% · centraal {z['centraal']}% · "
+                             f"rechts {z['rechts']}%")
             sel = P.get("selectie")
             if sel and sel.get("waarde_totaal_m"):
                 r.append(f"- Selectie: € {sel['waarde_totaal_m']} mln · {sel.get('kader')} spelers · "
                          f"Ø {sel.get('leeftijd')} j · {sel.get('buitenlanders')} buitenlanders")
+            rk = P.get("ranking") or []
+            uitschieters = [f"{x['label']} {x['rank']}e ({x['markering']})"
+                            for x in rk if x.get("markering")]
+            if uitschieters:
+                r.append(f"- Opvallend in de competitie: {' · '.join(uitschieters)}")
 
     # 3. Statistieken
     if o.get("stattabel"):

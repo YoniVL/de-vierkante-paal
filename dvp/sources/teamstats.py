@@ -2,9 +2,10 @@
 
 Bronnen:
 - Sofascore season-statistics (1 request/ploeg): aanval, verdediging, opbouw,
-  discipline, xG, en de thuis/uit-splitsing (aparte standings).
-- FotMob shotmap per competitiematch (gecacht op match-id, een seizoen lang):
-  doelpunt-types (gescoord én geïncasseerd) en de minuut-verdeling.
+  discipline, xG, strafschoppen, en de thuis/uit-splitsing (aparte standings).
+- FotMob shotmap + attacking-zones per competitiematch (gecacht op match-id, een
+  seizoen lang): doelpunt-types (gescoord én geïncasseerd), schotkwaliteit,
+  minuut-verdeling, de posities voor het veldje en de aanvalszones.
 - FotMob team-stats: ranking binnen de competitie.
 - Transfermarkt startseite: selectie-profiel (waarde, leeftijd, kadergrootte).
 
@@ -16,7 +17,6 @@ from __future__ import annotations
 
 import datetime as _dt
 
-from .. import config
 from ..http_client import get_json_impersonated as _get
 from ..names import normaliseer
 from ..store import get_kv, set_kv
@@ -25,8 +25,8 @@ from . import transfermarkt
 SS = "https://api.sofascore.com/api/v1"
 FM = "https://www.fotmob.com/api/data"
 
-_SHOTMAP_KV = "teamstats_shotmap"   # { "_versie":N, "<match_id>": {"h":id,"a":id,"sh":[[...]]} }
-_SHOTMAP_VERSIE = 2                 # ophogen = alle gecachte shotmaps opnieuw ophalen
+_SHOTMAP_KV = "teamstats_shotmap"   # { "_versie":N, "<match_id>": {"h":,"a":,"sh":[[...]],"az":{}} }
+_SHOTMAP_VERSIE = 3                 # ophogen = alle gecachte shotmaps opnieuw ophalen
 
 # FotMob-schotsituatie -> Nederlands
 _SITUATIE = {
@@ -60,6 +60,7 @@ def _season_kaart(s: dict) -> dict:
     """De ruwe 100+ Sofascore-velden -> de cijfers die de pagina toont (met per-match)."""
     n = s.get("matches") or 0
     pm = (lambda v: round((v or 0) / n, 2) if n else None)
+    rood = (s.get("redCards") or 0) + (s.get("yellowRedCards") or 0)
     return {
         "matches": n,
         "rating": round(s["avgRating"], 2) if s.get("avgRating") is not None else None,
@@ -74,11 +75,18 @@ def _season_kaart(s: dict) -> dict:
                       if s.get("shots") else None),
         "grote_kansen": s.get("bigChances"),
         "grote_kansen_gemist": s.get("bigChancesMissed"),
+        "corners": s.get("corners"),
+        "corners_tegen": s.get("cornersAgainst"),
         "corners_pm": pm(s.get("corners")),
         "xg": round(s["expectedGoals"], 2) if s.get("expectedGoals") is not None else None,
         "xa": round(s["expectedAssists"], 2) if s.get("expectedAssists") is not None else None,
         "goals_prevented": (round(s["goalsPrevented"], 2)
                             if s.get("goalsPrevented") is not None else None),
+        # strafschoppen (echte in-play + door de ploeg veroorzaakt)
+        "pen_benut": s.get("penaltyGoals"),
+        "pen_genomen": s.get("penaltiesTaken"),
+        "pen_weg": s.get("penaltiesCommited"),
+        "pen_tegen": s.get("penaltyGoalsConceded"),
         # verdediging
         "tegen": s.get("goalsConceded"),
         "tegen_pm": pm(s.get("goalsConceded")),
@@ -98,9 +106,9 @@ def _season_kaart(s: dict) -> dict:
         "buitenspel_pm": pm(s.get("offsides")),
         # discipline
         "geel": s.get("yellowCards"),
-        "rood": (s.get("redCards") or 0) + (s.get("yellowRedCards") or 0),
+        "rood": rood,
         "geel_pm": pm(s.get("yellowCards")),
-        "rood_pm": pm((s.get("redCards") or 0) + (s.get("yellowRedCards") or 0)),
+        "rood_pm": pm(rood),
     }
 
 
@@ -133,27 +141,34 @@ def _fm_team(team_id: int, ccode3: str) -> dict | None:
         return None
 
 
-def _fm_league_fixtures(blob: dict) -> tuple[list[int], int | None]:
-    """Afgewerkte competitiematchen (match-ids) + de competitie-id."""
-    liga = ((blob.get("stats") or {}).get("primaryLeagueId"))
+def _fm_league_fixtures(blob: dict) -> list[int]:
+    """Afgewerkte competitiematchen (match-ids)."""
+    liga = (blob.get("stats") or {}).get("primaryLeagueId")
     fx = ((blob.get("fixtures") or {}).get("allFixtures") or {}).get("fixtures") or []
-    ids = [
+    return [
         f["id"] for f in fx
         if f.get("status", {}).get("finished")
         and (not liga or (f.get("tournament") or {}).get("leagueId") == liga)
         and f.get("id")
     ]
-    return ids, liga
+
+
+def _zones(blok: dict | None) -> dict | None:
+    t = (blok or {}).get("total") or {}
+    if not t:
+        return None
+    return {"links": t.get("left", 0), "centraal": t.get("center", 0), "rechts": t.get("right", 0)}
 
 
 def _shotmap(match_id: int) -> dict | None:
-    """Compacte shotmap van één match voor de cache."""
+    """Compacte shotmap + aanvalszones van één match voor de cache."""
     try:
         md = _get(f"{FM}/matchDetails?matchId={match_id}", key="fotmob")
     except Exception:
         return None
     g = md.get("general") or {}
-    sm = ((md.get("content") or {}).get("shotmap") or {}).get("shots")
+    inhoud = md.get("content") or {}
+    sm = (inhoud.get("shotmap") or {}).get("shots")
     if not g.get("homeTeam") or sm is None:
         return None
     rijen = []
@@ -162,8 +177,6 @@ def _shotmap(match_id: int) -> dict | None:
             continue
         minuut = (s.get("min") or 0) + (s.get("minAdded") or 0)
         # strafschoppenreeks (na verlengingen) telt niet mee — geen echt spelmoment.
-        # FotMob markeert die met period=PenaltyShootout; als terugval: een 'penalty'
-        # zonder geldige speelminuut (0 of > 130).
         periode = (s.get("period") or "").lower()
         if "shootout" in periode or periode in ("penalties", "penaltyshootout"):
             continue
@@ -178,15 +191,21 @@ def _shotmap(match_id: int) -> dict | None:
             s.get("shotType") or "",
             minuut,
             round(float(s.get("expectedGoals") or 0.0), 4),
+            round(float(s.get("x") or 0.0), 1),
+            round(float(s.get("y") or 0.0), 1),
         ])
-    return {"h": g["homeTeam"]["id"], "a": g["awayTeam"]["id"], "sh": rijen}
+    az = inhoud.get("attackingZones") or {}
+    return {
+        "h": g["homeTeam"]["id"], "a": g["awayTeam"]["id"], "sh": rijen,
+        "az": {"h": _zones(az.get("home")), "a": _zones(az.get("away"))},
+    }
 
 
 def _ververs_shotmaps(match_ids: list[int]) -> dict:
     cache = get_kv(_SHOTMAP_KV, {}) or {}
     if cache.get("_versie") != _SHOTMAP_VERSIE:
-        cache = {"_versie": _SHOTMAP_VERSIE}   # oud formaat -> alles opnieuw
-    veranderd = cache.get("_versie") != _SHOTMAP_VERSIE
+        cache = {"_versie": _SHOTMAP_VERSIE}   # oud/ander formaat -> alles opnieuw
+    veranderd = False
     for mid in match_ids:
         if str(mid) in cache:
             continue
@@ -194,12 +213,10 @@ def _ververs_shotmaps(match_ids: list[int]) -> dict:
         if sm:
             cache[str(mid)] = sm
             veranderd = True
-    # oude matchen (vorig seizoen) opruimen
     houden = {str(m) for m in match_ids} | {"_versie"}
     for oud in [k for k in cache if k not in houden]:
         cache.pop(oud)
         veranderd = True
-    cache["_versie"] = _SHOTMAP_VERSIE
     if veranderd:
         set_kv(_SHOTMAP_KV, cache)
     return cache
@@ -213,37 +230,55 @@ def _aggregeer(team_id: int, cache: dict) -> dict:
     voor, tegen = _leeg(), _leeg()
     t_voor, t_tegen = [0] * 6, [0] * 6
     xg_voor = xg_tegen = 0.0
+    schoten_voor = schoten_tegen = 0
+    punten_voor: list[dict] = []
+    punten_tegen: list[dict] = []
+    zone_som = {"links": 0.0, "centraal": 0.0, "rechts": 0.0}
+    zone_n = 0
     matchen = 0
+
     for sleutel, m in cache.items():
         if sleutel == "_versie" or team_id not in (m["h"], m["a"]):
             continue
         matchen += 1
-        for st, goal, og, box, sit, typ, minuut, xg in m["sh"]:
+        kant = "h" if m["h"] == team_id else "a"
+        zn = (m.get("az") or {}).get(kant)
+        if zn:
+            for k in zone_som:
+                zone_som[k] += zn.get(k, 0)
+            zone_n += 1
+
+        for st, goal, og, box, sit, typ, minuut, xg, x, y in m["sh"]:
             if og:
                 begunstigde = m["a"] if st == m["h"] else m["h"]
                 if goal:
-                    doel = voor if begunstigde == team_id else tegen
-                    tim = t_voor if begunstigde == team_id else t_tegen
+                    is_v = begunstigde == team_id
+                    doel = voor if is_v else tegen
                     doel["totaal"] += 1
                     doel["fases"]["Eigen doelpunt"] = doel["fases"].get("Eigen doelpunt", 0) + 1
-                    tim[_timing_bak(minuut)] += 1
+                    (t_voor if is_v else t_tegen)[_timing_bak(minuut)] += 1
                 continue
             is_voor = st == team_id
             if is_voor:
                 xg_voor += xg
+                schoten_voor += 1
             else:
                 xg_tegen += xg
+                schoten_tegen += 1
             if not goal:
                 continue
             doel = voor if is_voor else tegen
-            tim = t_voor if is_voor else t_tegen
-            doel["totaal"] += 1
             fase = _SITUATIE.get(sit, "Open spel")
+            doel["totaal"] += 1
             doel["fases"][fase] = doel["fases"].get(fase, 0) + 1
-            lich = _LICHAAM.get(typ, "Andere")
-            doel["lichaam"][lich] = doel["lichaam"].get(lich, 0) + 1
+            doel["lichaam"][_LICHAAM.get(typ, "Andere")] = \
+                doel["lichaam"].get(_LICHAAM.get(typ, "Andere"), 0) + 1
             doel["binnen" if box else "buiten"] += 1
-            tim[_timing_bak(minuut)] += 1
+            (t_voor if is_voor else t_tegen)[_timing_bak(minuut)] += 1
+            (punten_voor if is_voor else punten_tegen).append(
+                {"x": x, "y": y, "xg": round(xg, 3), "fase": fase})
+
+    zones = ({k: round(v / zone_n) for k, v in zone_som.items()} if zone_n else None)
     return {
         "matchen_met_data": matchen,
         "gescoord": voor,
@@ -253,42 +288,64 @@ def _aggregeer(team_id: int, cache: dict) -> dict:
         "timing_tegen": t_tegen,
         "xg_voor": round(xg_voor, 2),
         "xg_tegen": round(xg_tegen, 2),
+        "schoten_voor": schoten_voor,
+        "schoten_tegen": schoten_tegen,
+        "xg_per_schot_voor": round(xg_voor / schoten_voor, 3) if schoten_voor else None,
+        "xg_per_schot_tegen": round(xg_tegen / schoten_tegen, 3) if schoten_tegen else None,
+        "punten_voor": punten_voor,
+        "punten_tegen": punten_tegen,
+        "zones": zones,
     }
 
 
-# FotMob-kop (Engels) -> (Nederlands, volgorde). Alleen deze worden getoond,
-# in deze volgorde; de rest van FotMob's lijst laten we vallen (te veel ruis).
-_RANKING_NL: dict[str, tuple[str, int]] = {
-    "FotMob rating": ("Teamrating", 1),
-    "Goals per match": ("Goals per match", 2),
-    "Expected goals": ("xG (totaal)", 3),
-    "xG difference": ("xG-verschil", 4),
-    "Big chances": ("Grote kansen", 5),
-    "Set piece goals": ("Goals uit stilstaande fase", 6),
-    "Goals conceded per match": ("Tegengoals per match", 7),
-    "xG conceded": ("xG tegen", 8),
-    "Set piece goals conceded": ("Tegengoals uit stilstaande fase", 9),
-    "Penalties conceded": ("Strafschoppen weggegeven", 10),
-    "Clean sheets": ("Clean sheets", 11),
-    "Average possession": ("Balbezit", 12),
-    "Accurate passes per match": ("Passes per match", 13),
-    "Tackles per match": ("Tackles per match", 14),
-    "Interceptions per match": ("Intercepties per match", 15),
-    "Fouls per match": ("Fouten per match", 16),
-    "Yellow cards": ("Gele kaarten", 17),
-    "Red cards": ("Rode kaarten", 18),
+def _hoekschot_rendement(doelpunten: dict | None, corners: int | None) -> dict | None:
+    if not doelpunten or not corners:
+        return None
+    goals = (doelpunten["gescoord"]["fases"].get("Uit corner", 0))
+    return {"goals": goals, "corners": corners, "pct": round(100 * goals / corners, 1)}
+
+
+# FotMob-kop (Engels) -> (Nederlands, volgorde, omgekeerd). "omgekeerd" = hoog
+# in de ranglijst is slecht (veel tegengoals, veel kaarten ...).
+_RANKING_NL: dict[str, tuple[str, int, bool]] = {
+    "FotMob rating": ("Teamrating", 1, False),
+    "Goals per match": ("Goals per match", 2, False),
+    "Expected goals": ("xG (totaal)", 3, False),
+    "xG difference": ("xG-verschil", 4, False),
+    "Big chances": ("Grote kansen", 5, False),
+    "Set piece goals": ("Goals uit stilstaande fase", 6, False),
+    "Goals conceded per match": ("Tegengoals per match", 7, True),
+    "xG conceded": ("xG tegen", 8, True),
+    "Set piece goals conceded": ("Tegengoals uit stilstaande fase", 9, True),
+    "Penalties conceded": ("Strafschoppen weggegeven", 10, True),
+    "Clean sheets": ("Clean sheets", 11, False),
+    "Average possession": ("Balbezit", 12, False),
+    "Accurate passes per match": ("Passes per match", 13, False),
+    "Tackles per match": ("Tackles per match", 14, False),
+    "Interceptions per match": ("Intercepties per match", 15, False),
+    "Fouls per match": ("Fouten per match", 16, True),
+    "Yellow cards": ("Gele kaarten", 17, True),
+    "Red cards": ("Rode kaarten", 18, True),
 }
 
 
-def _ranking(blob: dict) -> list[dict]:
+def _ranking(blob: dict, ploegen: int | None) -> list[dict]:
+    grens = max(3, round((ploegen or 18) / 4))
     uit = []
     for it in ((blob.get("stats") or {}).get("teams") or []):
         p = it.get("participant") or {}
         kop = it.get("header") or it.get("stat") or ""
         if p.get("rank") is None or kop not in _RANKING_NL:
             continue
-        nl, volg = _RANKING_NL[kop]
-        uit.append({"label": nl, "waarde": p.get("value"), "rank": p.get("rank"), "volgorde": volg})
+        nl, volg, omgekeerd = _RANKING_NL[kop]
+        rank = p["rank"]
+        # markering: sterk (groen ▲) of zwak (rood ▼) uitschieter, anders niets
+        sterk = (rank <= grens) if not omgekeerd else (ploegen and rank > ploegen - grens)
+        zwak = (ploegen and rank > ploegen - grens) if not omgekeerd else (rank <= grens)
+        uit.append({
+            "label": nl, "waarde": p.get("value"), "rank": rank, "volgorde": volg,
+            "markering": "sterk" if sterk else "zwak" if zwak else "",
+        })
     uit.sort(key=lambda r: r["volgorde"])
     return uit
 
@@ -302,6 +359,17 @@ def _tm_ids(naam: str, competitie: str | None) -> tuple[int, str] | None:
         return transfermarkt.zoek_club(naam, competitie)
     except Exception:
         return None
+
+
+# --- ploeg-koppeling ---------------------------------------------------
+def _overlap(a: str | None, b: str | None) -> bool:
+    return bool(set(normaliseer(a or "").split()) & set(normaliseer(b or "").split()))
+
+
+def _zoek_fm(naam: str) -> int | None:
+    from .fotmob import zoek_team
+    treffers = [o for o in zoek_team(naam) if _overlap(o["naam"], naam)]
+    return treffers[0]["id"] if treffers else None
 
 
 # --- publiek ----------------------------------------------------------
@@ -323,32 +391,32 @@ def fetch(sofascore_blob: dict, ploeg: dict | None = None) -> dict:
     }
     if not (volgende and teg.get("id") and ut and seizoen):
         out["status"] = {"code": "leeg",
-                         "tekst": "geen volgende competitiewedstrijd bekend — teamstatistieken niet beschikbaar"}
+                         "tekst": "geen volgende competitiewedstrijd bekend — "
+                                  "teamstatistieken niet beschikbaar"}
         return out
 
     eigen_thuis = bool(volgende.get("antwerp_thuis"))
     ccode3 = eigen.get("fotmob_ccode3") or "BEL"
 
-    # FotMob-blob van de eigen ploeg (nodig voor ranking, fixtures én de tegenstander-id)
+    # FotMob-blob van de eigen ploeg (ranking, fixtures én de tegenstander-id)
     eigen_fm = _fm_team(eigen.get("fotmob_id"), ccode3) if eigen.get("fotmob_id") else None
     opp_fm_id = None
     if eigen_fm:
         nm = ((eigen_fm.get("overview") or {}).get("nextMatch") or {}).get("opponent") or {}
         if nm.get("id") and _overlap(nm.get("name"), teg["naam"]):
             opp_fm_id = nm["id"]
-    if not opp_fm_id:
-        opp_fm_id = _zoek_fm(teg["naam"])
+    opp_fm_id = opp_fm_id or _zoek_fm(teg["naam"])
     opp_fm = _fm_team(opp_fm_id, ccode3) if opp_fm_id else None
 
     thuisuit = _thuisuit(ut, seizoen)
-    out["competitie_ploegen"] = len(thuisuit) or None
+    aantal_ploegen = len(thuisuit) or None
+    out["competitie_ploegen"] = aantal_ploegen
 
-    # shotmaps voor beide ploegen samen (dedup) ophalen/cachen
+    # shotmaps van beide ploegen samen (ontdubbeld) ophalen/cachen
     alle_ids: list[int] = []
     for blob in (eigen_fm, opp_fm):
         if blob:
-            ids, _ = _fm_league_fixtures(blob)
-            alle_ids += ids
+            alle_ids += _fm_league_fixtures(blob)
     cache = _ververs_shotmaps(sorted(set(alle_ids)))
 
     spec = [
@@ -362,15 +430,17 @@ def fetch(sofascore_blob: dict, ploeg: dict | None = None) -> dict:
 
     for p in spec:
         seizoen_kaart = _season_kaart(_season_stats(p["ss_id"], ut, seizoen))
-        tm_id, tm_slug = (p["tm"] or (None, None))
+        doelpunten = _aggregeer(p["fm_id"], cache) if p["fm_id"] else None
+        tm_id, tm_slug = p["tm"] or (None, None)
         out["ploegen"].append({
             "rol": p["rol"],
             "naam": p["naam"],
             "sofascore_id": p["ss_id"],
             "seizoen": seizoen_kaart,
             "thuisuit": thuisuit.get(p["ss_id"], {}),
-            "doelpunten": _aggregeer(p["fm_id"], cache) if p["fm_id"] else None,
-            "ranking": _ranking(p["fm"]) if p["fm"] else [],
+            "doelpunten": doelpunten,
+            "hoekschot": _hoekschot_rendement(doelpunten, seizoen_kaart.get("corners")),
+            "ranking": _ranking(p["fm"], aantal_ploegen) if p["fm"] else [],
             "selectie": (transfermarkt.club_profiel(tm_id, tm_slug)
                          if tm_id and tm_slug else None),
         })
@@ -380,15 +450,3 @@ def fetch(sofascore_blob: dict, ploeg: dict | None = None) -> dict:
         out["status"] = {"code": "leeg",
                          "tekst": "Sofascore gaf geen seizoenscijfers voor deze ploegen"}
     return out
-
-
-def _overlap(a: str | None, b: str | None) -> bool:
-    wa = set(normaliseer(a or "").split())
-    wb = set(normaliseer(b or "").split())
-    return bool(wa & wb)
-
-
-def _zoek_fm(naam: str) -> int | None:
-    from .fotmob import zoek_team
-    treffers = [o for o in zoek_team(naam) if _overlap(o["naam"], naam)]
-    return treffers[0]["id"] if treffers else None

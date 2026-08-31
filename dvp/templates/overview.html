@@ -205,6 +205,20 @@
   .ts-toggle button{background:var(--vlak-2);border:1px solid var(--lijn);color:var(--grijs);
        border-radius:7px;padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
   .ts-toggle button.actief{background:var(--rood);color:#12151a;border-color:var(--rood)}
+  .ts-subtabs{display:flex;gap:5px;margin:10px 0 12px;flex-wrap:wrap}
+  .ts-subtabs button{background:var(--vlak-2);border:1px solid var(--lijn);color:var(--grijs);
+       border-radius:7px;padding:6px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .ts-subtabs button.actief{background:var(--inkt);color:var(--bg);border-color:var(--inkt)}
+  .ts-sub{display:none} .ts-sub.actief{display:block}
+  .ts-veld-wrap{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .ts-veld{width:100%;max-width:330px;height:auto;border-radius:6px;display:block}
+  .ts[data-modus=thuis] .ts-veld,.ts[data-modus=uit] .ts-veld{max-width:430px}
+  .zone{display:flex;height:20px;border-radius:5px;overflow:hidden;font-size:10px;font-weight:700;margin-top:5px}
+  .zone-seg{display:flex;align-items:center;justify-content:center;color:#0e1014;min-width:0}
+  .zone-seg.l{background:#5ea6ff}.zone-seg.c{background:#8a93a3}.zone-seg.r{background:var(--rood)}
+  .zone-l{display:flex;justify-content:space-between;font-size:10px;color:var(--grijs);margin-top:2px}
+  .ts-kaart li .mk{font-size:9.5px;font-weight:800;margin-left:4px}
+  .ts-kaart li .mk.sterk{color:var(--goed)} .ts-kaart li .mk.zwak{color:var(--slecht)}
   .ts-groepen{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
        gap:10px 14px;align-items:start;margin:6px 0 4px}
   .ts-groep{border:1px solid var(--lijn);border-radius:9px;padding:10px 12px;background:var(--vlak-2)}
@@ -988,6 +1002,37 @@
       <div class="ts-legende"><span><i style="background:var(--goed)"></i>gescoord</span><span><i style="background:var(--slecht)"></i>geïncasseerd</span></div>
     {%- endmacro -%}
 
+    {%- macro zonebalk(z) -%}
+      {%- if z -%}
+      <div class="zone">
+        <span class="zone-seg l" style="width:{{ z.links }}%">{{ z.links }}%</span>
+        <span class="zone-seg c" style="width:{{ z.centraal }}%">{{ z.centraal }}%</span>
+        <span class="zone-seg r" style="width:{{ z.rechts }}%">{{ z.rechts }}%</span>
+      </div>
+      <div class="zone-l"><span>links</span><span>centraal</span><span>rechts</span></div>
+      {%- else -%}<p class="muted" style="font-size:12px">geen zonedata</p>{%- endif -%}
+    {%- endmacro -%}
+
+    {# mini-veld (aanvallende helft, doel rechts) met de doelpunten als stippen (grootte = xG) #}
+    {%- macro veld(punten, kleur) -%}
+      <svg class="ts-veld" viewBox="0 0 210 136" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <rect x="0" y="0" width="210" height="136" fill="#245728"/>
+        <rect x="1" y="1" width="208" height="134" fill="none" stroke="rgba(255,255,255,.22)"/>
+        <rect x="144" y="27.5" width="65" height="81" fill="none" stroke="rgba(255,255,255,.22)"/>
+        <rect x="188" y="49.5" width="21" height="37" fill="none" stroke="rgba(255,255,255,.22)"/>
+        <line x1="1" y1="1" x2="1" y2="135" stroke="rgba(255,255,255,.4)" stroke-width="2"/>
+        <circle cx="209" cy="68" r="2.5" fill="rgba(255,255,255,.5)"/>
+        {%- for p in punten -%}
+          {%- set cx = [[((p.x - 52.5) / 52.5 * 210), 4]|max, 208]|min -%}
+          {%- set cy = [[(p.y / 68 * 136), 4]|max, 132]|min -%}
+          {%- set r = (2.2 + (p.xg ** 0.5) * 12)|round(1) -%}
+          <circle cx="{{ cx|round(1) }}" cy="{{ cy|round(1) }}" r="{{ r }}" fill="{{ kleur }}"
+                  fill-opacity=".5" stroke="{{ kleur }}" stroke-opacity=".9">
+            <title>{{ p.fase }} — xG {{ '%.2f'|format(p.xg) }}</title></circle>
+        {%- endfor -%}
+      </svg>
+    {%- endmacro -%}
+
     <div class="ts" id="ts" data-modus="vergelijk">
       <div class="ts-kop">
         <div class="ts-namen"><span class="ant">{{ A.naam }}</span> <span class="muted">thuis</span>
@@ -1002,6 +1047,13 @@
       <p class="muted">⚠ Nog weinig matchen gespeeld — deze cijfers zijn voorlopig volatiel.</p>
       {% endif %}
 
+      <nav class="ts-subtabs">
+        <button type="button" data-ts-tab="cijfers" class="actief">Cijfers</button>
+        <button type="button" data-ts-tab="doelpunten">Doelpunten</button>
+        <button type="button" data-ts-tab="context">Ranking &amp; selectie</button>
+      </nav>
+
+      <div class="ts-sub actief" data-ts-tab="cijfers">
       <div class="ts-groepen">
         <div class="ts-groep">
           <h3>Seizoen — {{ tsd.competitie }}</h3>
@@ -1016,15 +1068,38 @@
         </div>
 
         <div class="ts-groep">
-          <h3>xG-balans</h3>
+          <h3>xG &amp; schotkwaliteit</h3>
           <div class="ts-rijen">
             {% if A.doelpunten and B.doelpunten %}
             {{ rij('xG voor', A.doelpunten.xg_voor, B.doelpunten.xg_voor) }}
             {{ rij('xG tegen', A.doelpunten.xg_tegen, B.doelpunten.xg_tegen, 'laag') }}
             {{ rij('Goals − xG (voor)', (A.seizoen.goals or 0) - A.doelpunten.xg_voor, (B.seizoen.goals or 0) - B.doelpunten.xg_voor, 'geen') }}
+            {{ rij('xG per schot (voor)', A.doelpunten.xg_per_schot_voor, B.doelpunten.xg_per_schot_voor) }}
+            {{ rij('xG per schot (tegen)', A.doelpunten.xg_per_schot_tegen, B.doelpunten.xg_per_schot_tegen, 'laag') }}
             {% endif %}
-            {{ rij('xG (Sofascore)', A.seizoen.xg, B.seizoen.xg) }}
             {{ rij('Goals prevented (keeper)', A.seizoen.goals_prevented, B.seizoen.goals_prevented, 'geen') }}
+          </div>
+        </div>
+
+        <div class="ts-groep">
+          <h3>Stilstaande fase</h3>
+          <div class="ts-rijen">
+            {{ rij('Corners per match', A.seizoen.corners_pm, B.seizoen.corners_pm, 'geen') }}
+            {{ rij('Corner → goal %', (A.hoekschot.pct if A.hoekschot else none), (B.hoekschot.pct if B.hoekschot else none)) }}
+            {% if A.doelpunten and B.doelpunten %}
+            {{ rij('Goals uit corner/VT — voor', A.doelpunten.gescoord.fases.get('Uit corner',0) + A.doelpunten.gescoord.fases.get('Stilstaande fase',0), B.doelpunten.gescoord.fases.get('Uit corner',0) + B.doelpunten.gescoord.fases.get('Stilstaande fase',0)) }}
+            {{ rij('Goals uit corner/VT — tegen', A.doelpunten.geincasseerd.fases.get('Uit corner',0) + A.doelpunten.geincasseerd.fases.get('Stilstaande fase',0), B.doelpunten.geincasseerd.fases.get('Uit corner',0) + B.doelpunten.geincasseerd.fases.get('Stilstaande fase',0), 'laag') }}
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="ts-groep">
+          <h3>Strafschoppen</h3>
+          <div class="ts-rijen">
+            {{ rij('Benut', A.seizoen.pen_benut, B.seizoen.pen_benut, 'geen') }}
+            {{ rij('Genomen', A.seizoen.pen_genomen, B.seizoen.pen_genomen, 'geen') }}
+            {{ rij('Weggegeven', A.seizoen.pen_weg, B.seizoen.pen_weg, 'laag') }}
+            {{ rij('Strafschopgoals tegen', A.seizoen.pen_tegen, B.seizoen.pen_tegen, 'laag') }}
           </div>
         </div>
 
@@ -1037,7 +1112,6 @@
             {{ rij('Conversie %', A.seizoen.conversie, B.seizoen.conversie) }}
             {{ rij('Grote kansen', A.seizoen.grote_kansen, B.seizoen.grote_kansen) }}
             {{ rij('Grote kansen gemist', A.seizoen.grote_kansen_gemist, B.seizoen.grote_kansen_gemist, 'laag') }}
-            {{ rij('Corners per match', A.seizoen.corners_pm, B.seizoen.corners_pm) }}
           </div>
         </div>
 
@@ -1079,8 +1153,8 @@
         <thead><tr><th>Ploeg</th><th class="num">Gesp.</th><th class="num">W</th><th class="num">G</th><th class="num">V</th>
           <th class="num">DP+</th><th class="num">DP−</th><th class="num">Ptn</th><th class="num">Ptn/match</th></tr></thead>
         <tbody>
-          {% for P, veld, wie in [(A, 'thuis', 'thuis'), (B, 'uit', 'uit')] %}
-          {% set d = P.thuisuit[veld] if P.thuisuit and P.thuisuit[veld] else none %}
+          {% for P, wie in [(A, 'thuis'), (B, 'uit')] %}
+          {% set d = P.thuisuit[wie] if P.thuisuit and P.thuisuit[wie] else none %}
           <tr>
             <td><span class="{{ 'ant' if wie=='thuis' else 'teg' }}">{{ P.naam }}</span> <span class="muted">({{ wie }})</span></td>
             {% if d %}
@@ -1092,8 +1166,9 @@
           {% endfor %}
         </tbody>
       </table></div>
+      </div><!-- /ts-sub cijfers -->
 
-      <h3>Doelpunt-types, timing, ranking &amp; selectie</h3>
+      <div class="ts-sub" data-ts-tab="doelpunten">
       <div class="ts-detail">
         {% for P in [A, B] %}
         <div class="ts-kaart" data-rol="{{ P.rol }}">
@@ -1111,17 +1186,37 @@
               binnen zestien {{ dp.geincasseerd.binnen }} / buiten {{ dp.geincasseerd.buiten }}</p>
             <h5>Wanneer vallen de doelpunten</h5>
             {{ timing(dp) }}
-            <p class="muted" style="font-size:11px">op basis van {{ dp.matchen_met_data }} matchen met schotdata</p>
+            {% if dp.punten_voor %}
+            <h5>Waar ze scoren <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(stipgrootte = xG)</span></h5>
+            {{ veld(dp.punten_voor, 'var(--goed)') }}
+            {% endif %}
+            {% if dp.zones %}
+            <h5>Aanvalszones</h5>
+            {{ zonebalk(dp.zones) }}
+            {% endif %}
+            <p class="muted" style="font-size:11px;margin-top:6px">op basis van {{ dp.matchen_met_data }} matchen met schotdata</p>
           {% else %}
             <p class="muted" style="font-size:12px">Geen shotmap-data gevonden voor deze ploeg.</p>
           {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      </div><!-- /ts-sub doelpunten -->
+
+      <div class="ts-sub" data-ts-tab="context">
+      <div class="ts-detail">
+        {% for P in [A, B] %}
+        <div class="ts-kaart" data-rol="{{ P.rol }}">
+          <h4><span class="{{ 'ant' if P.rol=='thuis' else 'teg' }}">{{ P.naam }}</span></h4>
           {% if P.ranking %}
-          <h5>Ranking in {{ tsd.competitie }}</h5>
+          <h5>Ranking in {{ tsd.competitie }}{% if tsd.competitie_ploegen %} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(van {{ tsd.competitie_ploegen }})</span>{% endif %}</h5>
           <ul>
             {% for r in P.ranking %}
-            <li>{{ r.label }} — <strong>{{ r.rank }}<sup>e</sup></strong><span class="muted">{% if tsd.competitie_ploegen %} van {{ tsd.competitie_ploegen }}{% endif %} ({{ r.waarde }})</span></li>
+            <li>{{ r.label }} — <strong>{{ r.rank }}<sup>e</sup></strong> <span class="muted">({{ r.waarde }})</span>{% if r.markering %}<span class="mk {{ r.markering }}">{{ '▲ sterk' if r.markering=='sterk' else '▼ zwak' }}</span>{% endif %}</li>
             {% endfor %}
           </ul>
+          {% else %}
+          <p class="muted" style="font-size:12px">Geen ranking-data.</p>
           {% endif %}
           {% if P.selectie and P.selectie.waarde_totaal_m %}
           <h5>Selectie (Transfermarkt)</h5>
@@ -1133,6 +1228,8 @@
         </div>
         {% endfor %}
       </div>
+      </div><!-- /ts-sub context -->
+
       <p class="stempel" style="margin-top:12px">Opgehaald: <span class="g">{{ o.tijdstippen.teamstats|dt }}</span></p>
     </div>
     {% endif %}
@@ -1376,6 +1473,19 @@
     let start='vergelijk';
     try{ const s=localStorage.getItem('dvp-ts-modus'); if(s) start=s; }catch(e){}
     zet(start);
+
+    // sub-tabs (Cijfers / Doelpunten / Ranking & selectie)
+    const subKn=[...ts.querySelectorAll('.ts-subtabs button')];
+    const subs=[...ts.querySelectorAll('.ts-sub')];
+    function zetSub(n){
+      subKn.forEach(b=>b.classList.toggle('actief', b.dataset.tsTab===n));
+      subs.forEach(s=>s.classList.toggle('actief', s.dataset.tsTab===n));
+      try{ localStorage.setItem('dvp-ts-sub', n); }catch(e){}
+    }
+    subKn.forEach(b=>b.addEventListener('click',()=>zetSub(b.dataset.tsTab)));
+    let subStart='cijfers';
+    try{ const s=localStorage.getItem('dvp-ts-sub'); if(s && subKn.some(b=>b.dataset.tsTab===s)) subStart=s; }catch(e){}
+    zetSub(subStart);
   })();
 
   // praatpunten: open/dicht onthouden (standaard dicht)

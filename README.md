@@ -44,14 +44,25 @@ Sofascore-rating. **Sorteerbaar** op elke kolom, met het verschil sinds de vorig
 Bovenaan de **geschorste** (mist de volgende match) en geblesseerde Antwerp-spelers.
 
 ### Teamstatistieken
-De twee ploegen van de volgende match naast elkaar (toggle **Vergelijken / Thuisploeg /
-Uitploeg**): seizoenscijfers, xG-balans, aanval, verdediging, opbouw, discipline en de
-**thuis/uit-splitsing** (Sofascore). Per ploeg ook: **welke types doelpunten** ze maken
-én incasseren (open spel · tegenaanval · strafschop · stilstaande fase · uit corner ·
-voet/kop · binnen/buiten de zestien), **wanneer** die vallen (per kwartier), de **ranking
-in de competitie** (FotMob) en het **selectie-profiel** (marktwaarde, leeftijd, kadergrootte
-— Transfermarkt). Zit achter de aparte knop **teamstats**: die haalt de shotmap van elke
-gespeelde competitiematch op (de eerste keer ~1 min, daarna alleen de nieuwe matchen).
+De twee ploegen van de volgende match, met een toggle **Vergelijken / Thuisploeg /
+Uitploeg** en drie subtabbladen:
+
+- **Cijfers** — seizoenscijfers, xG & schotkwaliteit (xG per schot), aanval, verdediging,
+  opbouw, discipline, **strafschoppen** (benut/weggegeven), **stilstaande fase**
+  (corner→goal-rendement) en de **thuis/uit-splitsing**. Bron: Sofascore season-stats +
+  home/away-standings.
+- **Doelpunten** — per ploeg: **welke types doelpunten** ze maken én incasseren (open spel ·
+  tegenaanval · strafschop · stilstaande fase · uit corner · voet/kop · binnen/buiten de
+  zestien), **wanneer** die vallen (per kwartier), een **uitgetekend veldje** met de posities
+  van de doelpunten (stipgrootte = xG) en de **aanvalszones** (links/centraal/rechts).
+  Bron: FotMob-shotmap per gespeelde competitiematch. Strafschoppen uit een
+  shootout tellen niet mee.
+- **Ranking & selectie** — de **ranking in de competitie** (FotMob, met ▲/▼ voor sterke en
+  zwakke punten) en het **selectie-profiel** (marktwaarde, leeftijd, kadergrootte —
+  Transfermarkt).
+
+Zit achter de aparte knop **teamstats**: die haalt de shotmap van elke gespeelde
+competitiematch op (de eerste keer ~1 min, daarna alleen de nieuwe matchen).
 
 ### Diagnose
 Spelers/clubs die de tool niet automatisch kon koppelen tussen de bronnen, plus een
