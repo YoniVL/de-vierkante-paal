@@ -348,11 +348,13 @@
     .btn.klein{padding:9px 13px;font-size:13.5px}
     #ververs-knoppen .btn[data-bron=all]{width:100%}
 
-    /* tabbladen: één veegbare rij i.p.v. wikkelen */
-    .tabs{flex-wrap:nowrap;overflow-x:auto;gap:6px;margin:2px -10px 14px;padding:0 10px 5px;
-          -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
-    .tabs::-webkit-scrollbar{display:none}
-    .tabs button{flex:0 0 auto;padding:9px 14px;font-size:12.5px;scroll-snap-align:start}
+    /* onderdeel-keuze i.p.v. een rij tabbladen */
+    .tab-select{width:100%;padding:12px 12px;border-radius:9px;background:var(--vlak-2);
+       color:var(--inkt);border:1px solid var(--lijn);font:inherit;font-size:14.5px;font-weight:700;
+       -webkit-appearance:none;appearance:none;
+       background-image:linear-gradient(45deg,transparent 50%,var(--rood) 50%),linear-gradient(135deg,var(--rood) 50%,transparent 50%);
+       background-position:calc(100% - 20px) 55%, calc(100% - 14px) 55%;
+       background-size:6px 6px, 6px 6px;background-repeat:no-repeat}
 
     .pitch{min-height:340px;padding:12px 2px}
     .pitch::after{width:56px;height:56px}
@@ -563,6 +565,16 @@
   {% endif %}
 
   <nav class="tabs">
+    {% if mobiel %}
+    <select class="tab-select" aria-label="Onderdeel kiezen">
+      <option value="wedstrijd">Vorige wedstrijd</option>
+      <option value="voorbeschouwing">Voorbeschouwing</option>
+      <option value="statistieken">Statistieken</option>
+      <option value="teamstats">Teamstatistieken</option>
+      <option value="diagnose">Diagnose</option>
+      <option value="handleiding">Handleiding</option>
+    </select>
+    {% else %}
     <button data-tab="wedstrijd" class="actief">Vorige wedstrijd</button>
     <button data-tab="voorbeschouwing">Voorbeschouwing</button>
     <button data-tab="statistieken">Statistieken</button>
@@ -570,6 +582,7 @@
     <button data-tab="diagnose">Diagnose</button>
     <button data-tab="export">Export</button>
     <button data-tab="handleiding">Handleiding</button>
+    {% endif %}
   </nav>
 
   {% set v = o.sofascore.vorige %}
@@ -1406,6 +1419,7 @@
   </section>
   </div>
 
+  {% if not mobiel %}
   <div class="tab" data-tab="export">
   <section>
     <h2>Export &amp; afleveringen</h2>
@@ -1450,6 +1464,7 @@
     {% endif %}
   </section>
   </div>
+  {% endif %}
 
   <div class="tab" data-tab="handleiding">
   <section>
@@ -1568,18 +1583,24 @@
     rijen.forEach(r=>tb.appendChild(r));
   }
 
-  // tabs
+  // tabs (knoppen op desktop, keuzelijst op mobiel)
   (function(){
     const knoppen=[...document.querySelectorAll('.tabs button')];
+    const keuze=document.querySelector('.tab-select');
     const tabs=[...document.querySelectorAll('.tab')];
-    function toon(naam){
+    const namen=new Set(tabs.map(t=>t.dataset.tab));
+    function toon(naam, scroll){
+      if(!namen.has(naam)) naam='wedstrijd';
       knoppen.forEach(b=>b.classList.toggle('actief', b.dataset.tab===naam));
       tabs.forEach(t=>t.classList.toggle('actief', t.dataset.tab===naam));
+      if(keuze && keuze.value!==naam) keuze.value=naam;
+      if(scroll) window.scrollTo(0,0);
       try{ localStorage.setItem('dvp-tab', naam); }catch(e){}
     }
-    knoppen.forEach(b=>b.addEventListener('click',()=>toon(b.dataset.tab)));
+    knoppen.forEach(b=>b.addEventListener('click',()=>toon(b.dataset.tab, true)));
+    if(keuze) keuze.addEventListener('change',()=>toon(keuze.value, true));
     let start='wedstrijd';
-    try{ const s=localStorage.getItem('dvp-tab'); if(s && knoppen.some(b=>b.dataset.tab===s)) start=s; }catch(e){}
+    try{ const s=localStorage.getItem('dvp-tab'); if(s && namen.has(s)) start=s; }catch(e){}
     toon(start);
   })();
 
