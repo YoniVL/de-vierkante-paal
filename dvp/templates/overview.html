@@ -214,6 +214,19 @@
   .ts-lbl{font-size:11px;color:var(--grijs);text-align:center;text-transform:uppercase;letter-spacing:.03em}
   .ts-track{display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--lijn)}
   .ts-track i.l{background:var(--ant)} .ts-track i.r{background:var(--teg)}
+  /* één ploeg gekozen: één kolom, label links, waarde rechts, geen balk */
+  .ts[data-modus=thuis] .ts-rij,
+  .ts[data-modus=uit] .ts-rij{grid-template-columns:1fr auto}
+  .ts[data-modus=thuis] .ts-track,
+  .ts[data-modus=uit] .ts-track{display:none}
+  .ts[data-modus=thuis] .ts-lbl,
+  .ts[data-modus=uit] .ts-lbl{text-align:left;font-size:12px}
+  .ts[data-modus=thuis] .ts-b,
+  .ts[data-modus=uit] .ts-a{display:none}
+  .ts[data-modus=thuis] .ts-a{order:2;text-align:right;font-size:14px}
+  .ts[data-modus=uit] .ts-b{order:2;text-align:right;font-size:14px}
+  .ts[data-modus=thuis] .ts-a.win,
+  .ts[data-modus=uit] .ts-b.win{color:var(--inkt)}
   .ts-detail{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
   @media(max-width:720px){.ts-detail{grid-template-columns:1fr}}
   .ts[data-modus=thuis] .ts-detail .ts-kaart[data-rol=uit],
