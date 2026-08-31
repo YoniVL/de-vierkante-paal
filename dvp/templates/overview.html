@@ -205,26 +205,30 @@
   .ts-toggle button{background:var(--vlak-2);border:1px solid var(--lijn);color:var(--grijs);
        border-radius:7px;padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
   .ts-toggle button.actief{background:var(--rood);color:#12151a;border-color:var(--rood)}
-  .ts-rijen{display:grid;gap:5px;margin:4px 0 6px}
-  .ts-rij{display:grid;grid-template-columns:52px 1fr 52px;align-items:center;gap:8px;font-size:13px}
-  .ts-rij b{font-variant-numeric:tabular-nums;font-weight:700}
+  .ts-groepen{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+       gap:10px 14px;align-items:start;margin:6px 0 4px}
+  .ts-groep{border:1px solid var(--lijn);border-radius:9px;padding:10px 12px;background:var(--vlak-2)}
+  .ts-groep h3{margin:0 0 8px}
+  .ts-rijen{display:grid;gap:4px}
+  .ts-rij{display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px;font-size:13px}
+  .ts-rij b{font-variant-numeric:tabular-nums;font-weight:700;font-size:12.5px}
   .ts-rij .ts-a{text-align:right} .ts-rij .ts-b{text-align:left}
   .ts-rij b.win{color:var(--goed)}
   .ts-mid{display:flex;flex-direction:column;gap:2px;min-width:0}
-  .ts-lbl{font-size:11px;color:var(--grijs);text-align:center;text-transform:uppercase;letter-spacing:.03em}
-  .ts-track{display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--lijn)}
+  .ts-lbl{font-size:10px;color:var(--grijs);text-align:center;text-transform:uppercase;letter-spacing:.02em;line-height:1.25}
+  .ts-track{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--lijn)}
   .ts-track i.l{background:var(--ant)} .ts-track i.r{background:var(--teg)}
-  /* één ploeg gekozen: één kolom, label links, waarde rechts, geen balk */
+  /* één ploeg gekozen: label links, waarde rechts, geen balk */
   .ts[data-modus=thuis] .ts-rij,
-  .ts[data-modus=uit] .ts-rij{grid-template-columns:1fr auto}
+  .ts[data-modus=uit] .ts-rij{grid-template-columns:1fr auto;gap:10px}
   .ts[data-modus=thuis] .ts-track,
   .ts[data-modus=uit] .ts-track{display:none}
   .ts[data-modus=thuis] .ts-lbl,
-  .ts[data-modus=uit] .ts-lbl{text-align:left;font-size:12px}
+  .ts[data-modus=uit] .ts-lbl{text-align:left;font-size:11px}
   .ts[data-modus=thuis] .ts-b,
   .ts[data-modus=uit] .ts-a{display:none}
-  .ts[data-modus=thuis] .ts-a{order:2;text-align:right;font-size:14px}
-  .ts[data-modus=uit] .ts-b{order:2;text-align:right;font-size:14px}
+  .ts[data-modus=thuis] .ts-a{order:2;text-align:right;font-size:13.5px}
+  .ts[data-modus=uit] .ts-b{order:2;text-align:right;font-size:13.5px}
   .ts[data-modus=thuis] .ts-a.win,
   .ts[data-modus=uit] .ts-b.win{color:var(--inkt)}
   .ts-detail{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
@@ -998,62 +1002,76 @@
       <p class="muted">⚠ Nog weinig matchen gespeeld — deze cijfers zijn voorlopig volatiel.</p>
       {% endif %}
 
-      <h3>Seizoen — {{ tsd.competitie }}</h3>
-      <div class="ts-rijen">
-        {{ rij('Wedstrijden', A.seizoen.matches, B.seizoen.matches, 'geen') }}
-        {{ rij('Gem. teamrating', A.seizoen.rating, B.seizoen.rating) }}
-        {{ rij('Doelpunten', A.seizoen.goals, B.seizoen.goals) }}
-        {{ rij('Tegendoelpunten', A.seizoen.tegen, B.seizoen.tegen, 'laag') }}
-        {{ rij('Clean sheets', A.seizoen.clean_sheets, B.seizoen.clean_sheets) }}
-        {{ rij('Balbezit %', A.seizoen.balbezit, B.seizoen.balbezit, 'geen') }}
-      </div>
+      <div class="ts-groepen">
+        <div class="ts-groep">
+          <h3>Seizoen — {{ tsd.competitie }}</h3>
+          <div class="ts-rijen">
+            {{ rij('Wedstrijden', A.seizoen.matches, B.seizoen.matches, 'geen') }}
+            {{ rij('Gem. teamrating', A.seizoen.rating, B.seizoen.rating) }}
+            {{ rij('Doelpunten', A.seizoen.goals, B.seizoen.goals) }}
+            {{ rij('Tegendoelpunten', A.seizoen.tegen, B.seizoen.tegen, 'laag') }}
+            {{ rij('Clean sheets', A.seizoen.clean_sheets, B.seizoen.clean_sheets) }}
+            {{ rij('Balbezit %', A.seizoen.balbezit, B.seizoen.balbezit, 'geen') }}
+          </div>
+        </div>
 
-      <h3>xG-balans</h3>
-      <div class="ts-rijen">
-        {% if A.doelpunten and B.doelpunten %}
-        {{ rij('xG voor', A.doelpunten.xg_voor, B.doelpunten.xg_voor) }}
-        {{ rij('xG tegen', A.doelpunten.xg_tegen, B.doelpunten.xg_tegen, 'laag') }}
-        {{ rij('Goals − xG (voor)', (A.seizoen.goals or 0) - A.doelpunten.xg_voor, (B.seizoen.goals or 0) - B.doelpunten.xg_voor, 'geen') }}
-        {% endif %}
-        {{ rij('xG (Sofascore)', A.seizoen.xg, B.seizoen.xg) }}
-        {{ rij('Goals prevented (keeper)', A.seizoen.goals_prevented, B.seizoen.goals_prevented, 'geen') }}
-      </div>
+        <div class="ts-groep">
+          <h3>xG-balans</h3>
+          <div class="ts-rijen">
+            {% if A.doelpunten and B.doelpunten %}
+            {{ rij('xG voor', A.doelpunten.xg_voor, B.doelpunten.xg_voor) }}
+            {{ rij('xG tegen', A.doelpunten.xg_tegen, B.doelpunten.xg_tegen, 'laag') }}
+            {{ rij('Goals − xG (voor)', (A.seizoen.goals or 0) - A.doelpunten.xg_voor, (B.seizoen.goals or 0) - B.doelpunten.xg_voor, 'geen') }}
+            {% endif %}
+            {{ rij('xG (Sofascore)', A.seizoen.xg, B.seizoen.xg) }}
+            {{ rij('Goals prevented (keeper)', A.seizoen.goals_prevented, B.seizoen.goals_prevented, 'geen') }}
+          </div>
+        </div>
 
-      <h3>Aanval</h3>
-      <div class="ts-rijen">
-        {{ rij('Goals per match', A.seizoen.goals_pm, B.seizoen.goals_pm) }}
-        {{ rij('Schoten per match', A.seizoen.schoten_pm, B.seizoen.schoten_pm) }}
-        {{ rij('Op doel per match', A.seizoen.op_doel_pm, B.seizoen.op_doel_pm) }}
-        {{ rij('Conversie %', A.seizoen.conversie, B.seizoen.conversie) }}
-        {{ rij('Grote kansen', A.seizoen.grote_kansen, B.seizoen.grote_kansen) }}
-        {{ rij('Grote kansen gemist', A.seizoen.grote_kansen_gemist, B.seizoen.grote_kansen_gemist, 'laag') }}
-        {{ rij('Corners per match', A.seizoen.corners_pm, B.seizoen.corners_pm) }}
-      </div>
+        <div class="ts-groep">
+          <h3>Aanval</h3>
+          <div class="ts-rijen">
+            {{ rij('Goals per match', A.seizoen.goals_pm, B.seizoen.goals_pm) }}
+            {{ rij('Schoten per match', A.seizoen.schoten_pm, B.seizoen.schoten_pm) }}
+            {{ rij('Op doel per match', A.seizoen.op_doel_pm, B.seizoen.op_doel_pm) }}
+            {{ rij('Conversie %', A.seizoen.conversie, B.seizoen.conversie) }}
+            {{ rij('Grote kansen', A.seizoen.grote_kansen, B.seizoen.grote_kansen) }}
+            {{ rij('Grote kansen gemist', A.seizoen.grote_kansen_gemist, B.seizoen.grote_kansen_gemist, 'laag') }}
+            {{ rij('Corners per match', A.seizoen.corners_pm, B.seizoen.corners_pm) }}
+          </div>
+        </div>
 
-      <h3>Verdediging</h3>
-      <div class="ts-rijen">
-        {{ rij('Tegengoals per match', A.seizoen.tegen_pm, B.seizoen.tegen_pm, 'laag') }}
-        {{ rij('Schoten tegen per match', A.seizoen.schoten_tegen_pm, B.seizoen.schoten_tegen_pm, 'laag') }}
-        {{ rij('Grote kansen tegen', A.seizoen.grote_kansen_tegen, B.seizoen.grote_kansen_tegen, 'laag') }}
-        {{ rij('Tackles per match', A.seizoen.tackles_pm, B.seizoen.tackles_pm) }}
-        {{ rij('Intercepties per match', A.seizoen.intercepties_pm, B.seizoen.intercepties_pm) }}
-        {{ rij('Clearances per match', A.seizoen.clearances_pm, B.seizoen.clearances_pm, 'geen') }}
-        {{ rij('Fouten → goal', A.seizoen.fouten_naar_goal, B.seizoen.fouten_naar_goal, 'laag') }}
-        {{ rij('Reddingen per match', A.seizoen.reddingen_pm, B.seizoen.reddingen_pm, 'geen') }}
-      </div>
+        <div class="ts-groep">
+          <h3>Verdediging</h3>
+          <div class="ts-rijen">
+            {{ rij('Tegengoals per match', A.seizoen.tegen_pm, B.seizoen.tegen_pm, 'laag') }}
+            {{ rij('Schoten tegen per match', A.seizoen.schoten_tegen_pm, B.seizoen.schoten_tegen_pm, 'laag') }}
+            {{ rij('Grote kansen tegen', A.seizoen.grote_kansen_tegen, B.seizoen.grote_kansen_tegen, 'laag') }}
+            {{ rij('Tackles per match', A.seizoen.tackles_pm, B.seizoen.tackles_pm) }}
+            {{ rij('Intercepties per match', A.seizoen.intercepties_pm, B.seizoen.intercepties_pm) }}
+            {{ rij('Clearances per match', A.seizoen.clearances_pm, B.seizoen.clearances_pm, 'geen') }}
+            {{ rij('Fouten → goal', A.seizoen.fouten_naar_goal, B.seizoen.fouten_naar_goal, 'laag') }}
+            {{ rij('Reddingen per match', A.seizoen.reddingen_pm, B.seizoen.reddingen_pm, 'geen') }}
+          </div>
+        </div>
 
-      <h3>Opbouw &amp; stijl</h3>
-      <div class="ts-rijen">
-        {{ rij('Passes per match', A.seizoen.passes_pm, B.seizoen.passes_pm, 'geen') }}
-        {{ rij('Passaccuraatheid %', A.seizoen.pass_pct, B.seizoen.pass_pct) }}
-        {{ rij('Lange ballen %', A.seizoen.lange_bal_pct, B.seizoen.lange_bal_pct, 'geen') }}
-        {{ rij('Buitenspel per match', A.seizoen.buitenspel_pm, B.seizoen.buitenspel_pm, 'geen') }}
-      </div>
+        <div class="ts-groep">
+          <h3>Opbouw &amp; stijl</h3>
+          <div class="ts-rijen">
+            {{ rij('Passes per match', A.seizoen.passes_pm, B.seizoen.passes_pm, 'geen') }}
+            {{ rij('Passaccuraatheid %', A.seizoen.pass_pct, B.seizoen.pass_pct) }}
+            {{ rij('Lange ballen %', A.seizoen.lange_bal_pct, B.seizoen.lange_bal_pct, 'geen') }}
+            {{ rij('Buitenspel per match', A.seizoen.buitenspel_pm, B.seizoen.buitenspel_pm, 'geen') }}
+          </div>
+        </div>
 
-      <h3>Discipline</h3>
-      <div class="ts-rijen">
-        {{ rij('Geel per match', A.seizoen.geel_pm, B.seizoen.geel_pm, 'laag') }}
-        {{ rij('Rood (totaal)', A.seizoen.rood, B.seizoen.rood, 'laag') }}
+        <div class="ts-groep">
+          <h3>Discipline</h3>
+          <div class="ts-rijen">
+            {{ rij('Geel per match', A.seizoen.geel_pm, B.seizoen.geel_pm, 'laag') }}
+            {{ rij('Rood (totaal)', A.seizoen.rood, B.seizoen.rood, 'laag') }}
+          </div>
+        </div>
       </div>
 
       <h3>Thuis vs uit <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">— de helft die voor deze match telt</span></h3>
