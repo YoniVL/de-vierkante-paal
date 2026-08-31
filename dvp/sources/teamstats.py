@@ -25,7 +25,8 @@ from . import transfermarkt
 SS = "https://api.sofascore.com/api/v1"
 FM = "https://www.fotmob.com/api/data"
 
-_SHOTMAP_KV = "teamstats_shotmap"   # { "<match_id>": {"h":id,"a":id,"sh":[[...]]} }
+_SHOTMAP_KV = "teamstats_shotmap"   # { "_versie":N, "<match_id>": {"h":id,"a":id,"sh":[[...]]} }
+_SHOTMAP_VERSIE = 2                 # ophogen = alle gecachte shotmaps opnieuw ophalen
 
 # FotMob-schotsituatie -> Nederlands
 _SITUATIE = {
@@ -160,6 +161,14 @@ def _shotmap(match_id: int) -> dict | None:
         if not s.get("eventType"):
             continue
         minuut = (s.get("min") or 0) + (s.get("minAdded") or 0)
+        # strafschoppenreeks (na verlengingen) telt niet mee — geen echt spelmoment.
+        # FotMob markeert die met period=PenaltyShootout; als terugval: een 'penalty'
+        # zonder geldige speelminuut (0 of > 130).
+        periode = (s.get("period") or "").lower()
+        if "shootout" in periode or periode in ("penalties", "penaltyshootout"):
+            continue
+        if s.get("situation") == "Penalty" and not 0 < minuut <= 130:
+            continue
         rijen.append([
             s.get("teamId"),
             1 if s.get("eventType") == "Goal" else 0,
@@ -175,7 +184,9 @@ def _shotmap(match_id: int) -> dict | None:
 
 def _ververs_shotmaps(match_ids: list[int]) -> dict:
     cache = get_kv(_SHOTMAP_KV, {}) or {}
-    veranderd = False
+    if cache.get("_versie") != _SHOTMAP_VERSIE:
+        cache = {"_versie": _SHOTMAP_VERSIE}   # oud formaat -> alles opnieuw
+    veranderd = cache.get("_versie") != _SHOTMAP_VERSIE
     for mid in match_ids:
         if str(mid) in cache:
             continue
@@ -184,10 +195,11 @@ def _ververs_shotmaps(match_ids: list[int]) -> dict:
             cache[str(mid)] = sm
             veranderd = True
     # oude matchen (vorig seizoen) opruimen
-    houden = {str(m) for m in match_ids}
+    houden = {str(m) for m in match_ids} | {"_versie"}
     for oud in [k for k in cache if k not in houden]:
         cache.pop(oud)
         veranderd = True
+    cache["_versie"] = _SHOTMAP_VERSIE
     if veranderd:
         set_kv(_SHOTMAP_KV, cache)
     return cache
@@ -202,8 +214,8 @@ def _aggregeer(team_id: int, cache: dict) -> dict:
     t_voor, t_tegen = [0] * 6, [0] * 6
     xg_voor = xg_tegen = 0.0
     matchen = 0
-    for m in cache.values():
-        if team_id not in (m["h"], m["a"]):
+    for sleutel, m in cache.items():
+        if sleutel == "_versie" or team_id not in (m["h"], m["a"]):
             continue
         matchen += 1
         for st, goal, og, box, sit, typ, minuut, xg in m["sh"]:
