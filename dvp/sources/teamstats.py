@@ -361,6 +361,24 @@ def _tm_ids(naam: str, competitie: str | None) -> tuple[int, str] | None:
         return None
 
 
+# --- competitie per ploeg --------------------------------------------
+def _comp_van_ploeg(ss_id: int, standaard: dict) -> dict:
+    """De competitie waarin deze ploeg dit seizoen speelt (voor season-stats +
+    standings). Nodig als de volgende match een beker- of Europees duel is: dan
+    is de tegenstander niet onze competitie en heeft die daar geen cijfers.
+    Valt terug op ``standaard`` (onze competitie)."""
+    from .sofascore import _competitie_context
+    try:
+        events = _get(f"{SS}/team/{ss_id}/events/last/0").get("events", [])
+    except Exception:
+        events = []
+    ctx = _competitie_context(events) if events else None
+    if ctx and ctx.get("ut") and ctx.get("seizoen"):
+        return {"ut": ctx["ut"], "seizoen": ctx["seizoen"],
+                "naam": ctx.get("naam") or standaard.get("naam", "")}
+    return dict(standaard)
+
+
 # --- ploeg-koppeling ---------------------------------------------------
 def _overlap(a: str | None, b: str | None) -> bool:
     return bool(set(normaliseer(a or "").split()) & set(normaliseer(b or "").split()))
@@ -383,9 +401,11 @@ def fetch(sofascore_blob: dict, ploeg: dict | None = None) -> dict:
     eigen = ploeg or _ploeg_mod.actieve()
     teg = volgende.get("tegenstander") or {}
 
+    onze_comp = {"ut": ut, "seizoen": seizoen, "naam": comp.get("naam")
+                 or (eigen.get("competitie") or {}).get("naam") or ""}
     out: dict = {
         "opgehaald_op": _dt.datetime.now().isoformat(timespec="seconds"),
-        "competitie": comp.get("naam") or (eigen.get("competitie") or {}).get("naam"),
+        "competitie": onze_comp["naam"],
         "ploegen": [],
         "status": "ok",
     }
@@ -408,9 +428,20 @@ def fetch(sofascore_blob: dict, ploeg: dict | None = None) -> dict:
     opp_fm_id = opp_fm_id or _zoek_fm(teg["naam"])
     opp_fm = _fm_team(opp_fm_id, ccode3) if opp_fm_id else None
 
-    thuisuit = _thuisuit(ut, seizoen)
-    aantal_ploegen = len(thuisuit) or None
-    out["competitie_ploegen"] = aantal_ploegen
+    # Elke ploeg z'n eigen competitie: bij een beker-/Europees duel speelt de
+    # tegenstander niet in onze competitie en heeft die daar geen cijfers.
+    opp_comp = _comp_van_ploeg(teg["id"], onze_comp)
+    zelfde = opp_comp["ut"] == onze_comp["ut"]
+    if zelfde:
+        opp_comp["naam"] = onze_comp["naam"]   # zelfde competitie -> zelfde naam
+    out["zelfde_competitie"] = zelfde
+
+    thuisuit = _thuisuit(onze_comp["ut"], onze_comp["seizoen"])
+    grootte = {onze_comp["ut"]: len(thuisuit) or None}
+    if not zelfde:
+        tu2 = _thuisuit(opp_comp["ut"], opp_comp["seizoen"])
+        grootte[opp_comp["ut"]] = len(tu2) or None
+        thuisuit = {**thuisuit, **tu2}
 
     # shotmaps van beide ploegen samen (ontdubbeld) ophalen/cachen
     alle_ids: list[int] = []
@@ -422,25 +453,28 @@ def fetch(sofascore_blob: dict, ploeg: dict | None = None) -> dict:
     spec = [
         {"rol": "thuis" if eigen_thuis else "uit", "naam": eigen["naam"],
          "ss_id": eigen["sofascore_id"], "fm": eigen_fm, "fm_id": eigen.get("fotmob_id"),
-         "tm": (eigen.get("tm_id"), eigen.get("tm_slug"))},
+         "comp": onze_comp, "tm": (eigen.get("tm_id"), eigen.get("tm_slug"))},
         {"rol": "uit" if eigen_thuis else "thuis", "naam": teg["naam"],
          "ss_id": teg["id"], "fm": opp_fm, "fm_id": opp_fm_id,
-         "tm": _tm_ids(teg["naam"], out["competitie"])},
+         "comp": opp_comp, "tm": _tm_ids(teg["naam"], opp_comp["naam"])},
     ]
 
     for p in spec:
-        seizoen_kaart = _season_kaart(_season_stats(p["ss_id"], ut, seizoen))
+        pc = p["comp"]
+        n_ploegen = grootte.get(pc["ut"])
+        seizoen_kaart = _season_kaart(_season_stats(p["ss_id"], pc["ut"], pc["seizoen"]))
         doelpunten = _aggregeer(p["fm_id"], cache) if p["fm_id"] else None
         tm_id, tm_slug = p["tm"] or (None, None)
         out["ploegen"].append({
             "rol": p["rol"],
             "naam": p["naam"],
             "sofascore_id": p["ss_id"],
+            "competitie": {"naam": pc["naam"], "ploegen": n_ploegen},
             "seizoen": seizoen_kaart,
             "thuisuit": thuisuit.get(p["ss_id"], {}),
             "doelpunten": doelpunten,
             "hoekschot": _hoekschot_rendement(doelpunten, seizoen_kaart.get("corners")),
-            "ranking": _ranking(p["fm"], aantal_ploegen) if p["fm"] else [],
+            "ranking": _ranking(p["fm"], n_ploegen) if p["fm"] else [],
             "selectie": (transfermarkt.club_profiel(tm_id, tm_slug)
                          if tm_id and tm_slug else None),
         })

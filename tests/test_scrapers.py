@@ -117,8 +117,12 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(len(ts["ploegen"]), 2)
         rollen = {p["rol"] for p in ts["ploegen"]}
         self.assertEqual(rollen, {"thuis", "uit"})
+        # de scenario's spelen een competitiewedstrijd -> zelfde competitie
+        self.assertTrue(ts["zelfde_competitie"])
         for p in ts["ploegen"]:
             self.assertTrue(p["naam"])
+            self.assertTrue(p["competitie"]["naam"])
+            self.assertGreaterEqual(p["competitie"]["ploegen"], 14)
             self.assertGreaterEqual(p["seizoen"]["matches"], 1)
             self.assertIsNotNone(p["seizoen"]["goals"])
             dp = p["doelpunten"]

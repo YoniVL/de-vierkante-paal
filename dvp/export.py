@@ -219,9 +219,13 @@ def naar_markdown(o: dict) -> str:
     tsd = o.get("teamstats") or {}
     if tsd.get("ploegen") and len(tsd["ploegen"]) == 2:
         r.append(f"\n## Teamstatistieken — {tsd.get('competitie', '')}")
+        if tsd.get("zelfde_competitie") is False:
+            r.append("\n_Beker-/Europees duel: de cijfers per ploeg komen uit hun eigen "
+                     "competitie en zijn niet 1-op-1 vergelijkbaar._")
         for P in tsd["ploegen"]:
             s = P["seizoen"]
-            r.append(f"\n### {P['naam']} ({P['rol']})")
+            comp = (P.get("competitie") or {}).get("naam")
+            r.append(f"\n### {P['naam']} ({P['rol']})" + (f" — {comp}" if comp else ""))
             r.append(f"- Seizoen: {s.get('matches')} matchen · {s.get('goals')} voor / "
                      f"{s.get('tegen')} tegen · rating {s.get('rating')} · balbezit {s.get('balbezit')}% · "
                      f"xG {s.get('xg')}")

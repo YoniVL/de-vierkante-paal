@@ -64,6 +64,11 @@ Uitploeg** en drie subtabbladen:
 Zit achter de aparte knop **teamstats**: die haalt de shotmap van elke gespeelde
 competitiematch op (de eerste keer ~1 min, daarna alleen de nieuwe matchen).
 
+Is de volgende match een **beker- of Europees duel**, dan komen de seizoenscijfers,
+standings en ranking per ploeg uit **hun eigen competitie** (de tool toont een melding
+dat de vergelijking dan niet 1-op-1 is). De doelpunt-types, timing en het veldje kloppen
+wel, want die worden per ploeg uit hun eigen competitiematchen opgebouwd.
+
 ### Diagnose
 Spelers/clubs die de tool niet automatisch kon koppelen tussen de bronnen, plus een
 formulier om een **alias** toe te voegen (zodat het voortaan wél lukt).

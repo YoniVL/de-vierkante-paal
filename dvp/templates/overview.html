@@ -1054,9 +1054,15 @@
       </nav>
 
       <div class="ts-sub actief" data-ts-tab="cijfers">
+      {% if tsd.zelfde_competitie is defined and not tsd.zelfde_competitie %}
+      <p class="uitval-lijn bless">ℹ️ Beker- of Europees duel — de seizoenscijfers, standings en
+        ranking per ploeg komen uit <strong>hun eigen competitie</strong>
+        ({{ A.naam }}: {{ A.competitie.naam or '?' }} · {{ B.naam }}: {{ B.competitie.naam or '?' }})
+        en zijn dus niet 1-op-1 vergelijkbaar. De doelpunt-types, timing en het veldje kloppen wel.</p>
+      {% endif %}
       <div class="ts-groepen">
         <div class="ts-groep">
-          <h3>Seizoen — {{ tsd.competitie }}</h3>
+          <h3>Seizoen{% if tsd.zelfde_competitie %} — {{ tsd.competitie }}{% endif %}</h3>
           <div class="ts-rijen">
             {{ rij('Wedstrijden', A.seizoen.matches, B.seizoen.matches, 'geen') }}
             {{ rij('Gem. teamrating', A.seizoen.rating, B.seizoen.rating) }}
@@ -1209,7 +1215,7 @@
         <div class="ts-kaart" data-rol="{{ P.rol }}">
           <h4><span class="{{ 'ant' if P.rol=='thuis' else 'teg' }}">{{ P.naam }}</span></h4>
           {% if P.ranking %}
-          <h5>Ranking in {{ tsd.competitie }}{% if tsd.competitie_ploegen %} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(van {{ tsd.competitie_ploegen }})</span>{% endif %}</h5>
+          <h5>Ranking in {{ P.competitie.naam or tsd.competitie }}{% if P.competitie.ploegen %} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(van {{ P.competitie.ploegen }})</span>{% endif %}</h5>
           <ul>
             {% for r in P.ranking %}
             <li>{{ r.label }} — <strong>{{ r.rank }}<sup>e</sup></strong> <span class="muted">({{ r.waarde }})</span>{% if r.markering %}<span class="mk {{ r.markering }}">{{ '▲ sterk' if r.markering=='sterk' else '▼ zwak' }}</span>{% endif %}</li>
