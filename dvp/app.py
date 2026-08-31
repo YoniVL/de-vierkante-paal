@@ -262,6 +262,7 @@ def _render_index(user_agent: str = "") -> bytes:
         "club": actief.get("naam") or merk.app_naam(),
         "eigen_naam": actief.get("naam") or config.CLUB_NAAM,
         "app_naam": merk.app_naam(),
+        "thema": merk.thema(),
         "toon_kiezer": merk.toon_kiezer(),
         "toon_whoscored": merk.toon_whoscored(),
         "toon_ws": merk.toon_whoscored() and not mobiel,  # WhoScored-invoer: niet op mobiel
@@ -282,6 +283,7 @@ def _render_index(user_agent: str = "") -> bytes:
 def _render_kies_ploeg(voorinvul: dict | None = None) -> bytes:
     return _env.get_template("kies_ploeg.html").render(
         app_naam=merk.app_naam(),
+        thema=merk.thema(),
         competities=competities.COMPETITIES,
         actieve_ploeg=ploeg.actieve() if ploeg.is_gekozen() else None,
         voorinvul=voorinvul,
@@ -292,6 +294,7 @@ def _render_instellingen() -> bytes:
     lijst = ploeg.lijst()
     return _env.get_template("instellingen.html").render(
         app_naam=merk.app_naam(),
+        thema=merk.thema(),
         actieve_ploeg=ploeg.actieve(),
         vastgeprikt=[p for p in lijst if p.get("vast")],
         recent=[p for p in lijst if not p.get("vast")],

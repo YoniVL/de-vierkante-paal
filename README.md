@@ -185,7 +185,8 @@ bewaarde afleveringen blijven per ploeg gescheiden.
 De verschillen tussen de twee varianten zitten volledig in **`merk.json`** (wordt door
 het build-script in het pakket gezet). Zonder `merk.json` = de DVP-versie. DVP draait op
 poort **8756**, Aftrap op **8757** (via `"poort"` in `merk.json`), zodat ze naast elkaar
-geïnstalleerd én tegelijk kunnen draaien.
+geïnstalleerd én tegelijk kunnen draaien. Aftrap heeft ook een eigen logo en een groen
+accent (`"accent"` / `"accent_diep"` in `merk.json`); de rest van de stijl is gedeeld.
 
 ## Gebruik per aflevering
 

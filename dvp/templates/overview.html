@@ -17,6 +17,10 @@
     --ant:var(--rood); --ant-bg:rgba(255,77,103,.13);   /* accent voor Antwerp */
     --gras1:#2c6f38; --gras2:#22582c;
   }
+  {% if thema %}:root{
+    --rood:{{ thema.accent }}; --rood-diep:{{ thema.accent_diep }};
+    --ant:{{ thema.accent }}; --ant-bg:{{ thema.accent_zwak }};
+  }{% endif %}
   *{box-sizing:border-box}
   body{margin:0;font:15px/1.55 system-ui,"Segoe UI",Roboto,sans-serif;color:var(--inkt);background:var(--bg)}
   a{color:var(--rood);text-decoration:none} a:hover{text-decoration:underline}

@@ -91,8 +91,13 @@ chaquopy {
             srcDir("src/main/python")
             srcDir(layout.buildDirectory.dir("generated/python"))
         }
+        // logo.png komt per variant uit de flavor-bronmap (main levert 'm niet;
+        // zie de exclude in kopieerDvp), zodat er nooit twee kopieën botsen.
+        getByName("dvp") {
+            srcDir("src/dvp/python")      // dvp/static/logo.png (schild)
+        }
         getByName("aftrap") {
-            srcDir("src/aftrap/python")   // merk.json
+            srcDir("src/aftrap/python")   // merk.json + dvp/static/logo.png (kruisje)
         }
     }
 }
@@ -106,6 +111,8 @@ dependencies {
 val kopieerDvp by tasks.registering(Sync::class) {
     from(rootProject.file("../../dvp")) {
         exclude("**/__pycache__/**", "**/*.pyc")
+        exclude("static/logo.png")   // per flavor geleverd (src/{dvp,aftrap}/python)
+        exclude("static/logo.ico")   // enkel voor de Windows-snelkoppeling, niet op Android
     }
     into(layout.buildDirectory.dir("generated/python/dvp"))
 }

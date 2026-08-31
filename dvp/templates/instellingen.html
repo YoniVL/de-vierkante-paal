@@ -9,6 +9,7 @@
 <style>
   :root{color-scheme:dark;--rood:#ff4d67;--inkt:#e7e9ee;--grijs:#8a93a3;--lijn:#2a2f3a;
         --vlak:#171a21;--vlak-2:#1e222b;--bg:#0e1014;--goed:#4ade80}
+  {% if thema %}:root{--rood:{{ thema.accent }};--rood-diep:{{ thema.accent_diep }}}{% endif %}
   *{box-sizing:border-box}
   body{margin:0;font:15px/1.55 system-ui,"Segoe UI",Roboto,sans-serif;color:var(--inkt);background:var(--bg)}
   main{max-width:640px;margin:0 auto;padding:34px 22px 80px}

@@ -7,6 +7,8 @@ __pycache__/
 data/
 afleveringen/
 merk.json
+# ... behalve de vaste Aftrap-variant van de Android-build (hoort wel in git)
+!installer/android/app/src/aftrap/python/merk.json
 
 # build-uitvoer van de installers
 installer/build/

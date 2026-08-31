@@ -81,6 +81,24 @@ class MerkTests(unittest.TestCase):
         self.assertTrue(m.toon_kiezer())
         self.assertFalse(m.toon_whoscored())
 
+    def test_thema_dvp_is_none(self):
+        tmp = Path(tempfile.mkdtemp(prefix="dvp_merk_"))
+        import dvp.merk as m
+        m.config.BASE_DIR = tmp
+        m.merk.cache_clear()
+        self.assertIsNone(m.thema())
+
+    def test_thema_accent(self):
+        m = self._merk({"app_naam": "Aftrap", "accent": "#2fd074"})
+        t = m.thema()
+        self.assertEqual(t["accent"], "#2fd074")
+        self.assertEqual(t["accent_diep"], "#2fd074")   # geen accent_diep -> gelijk aan accent
+        self.assertEqual(t["accent_zwak"], "rgba(47,208,116,0.14)")
+
+    def test_thema_accent_gelijk_aan_dvp_is_none(self):
+        m = self._merk({"app_naam": "Aftrap", "accent": "#ff4d67"})
+        self.assertIsNone(m.thema())
+
     def test_utf8_bom(self):
         tmp = Path(tempfile.mkdtemp(prefix="dvp_merk_"))
         (tmp / "merk.json").write_bytes(b"\xef\xbb\xbf" + b'{"app_naam":"Aftrap"}')
