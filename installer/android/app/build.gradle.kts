@@ -1,3 +1,5 @@
+import java.time.LocalDate
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -14,11 +16,13 @@ android {
     compileSdk = 34
     buildToolsVersion = "36.0.0"
 
+    val nu = LocalDate.now()
     defaultConfig {
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1"
+        // versiecode loopt op met de bouwdatum (nodig om updates te installeren)
+        versionCode = (nu.year - 2025) * 10000 + nu.monthValue * 100 + nu.dayOfMonth
+        versionName = nu.toString()
         ndk {
             abiFilters += listOf("x86_64", "arm64-v8a")
         }
