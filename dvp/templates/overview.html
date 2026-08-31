@@ -1014,7 +1014,7 @@
     {%- endmacro -%}
 
     {# mini-veld (aanvallende helft, doel rechts) met de doelpunten als stippen (grootte = xG) #}
-    {%- macro veld(punten, kleur) -%}
+    {%- macro shotveld(punten, kleur) -%}
       <svg class="ts-veld" viewBox="0 0 210 136" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <rect x="0" y="0" width="210" height="136" fill="#245728"/>
         <rect x="1" y="1" width="208" height="134" fill="none" stroke="rgba(255,255,255,.22)"/>
@@ -1188,7 +1188,7 @@
             {{ timing(dp) }}
             {% if dp.punten_voor %}
             <h5>Waar ze scoren <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(stipgrootte = xG)</span></h5>
-            {{ veld(dp.punten_voor, 'var(--goed)') }}
+            {{ shotveld(dp.punten_voor, 'var(--goed)') }}
             {% endif %}
             {% if dp.zones %}
             <h5>Aanvalszones</h5>

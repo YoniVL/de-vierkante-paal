@@ -37,24 +37,21 @@ class KolomTests(unittest.TestCase):
         for scen, cid, slug in (("antwerp", 1096, "royal-antwerpen-fc"),
                                 ("arsenal", 11, "fc-arsenal")):
             ploeg = {"tm_id": cid, "tm_slug": slug}
-            with NepHttp(scen):
+            nep = NepHttp(scen)
+            with nep:
                 op_kop = tm.fetch(ploeg=ploeg)["spelers"]
 
-            # forceer de fallback door de sorteerlinks uit de kop te halen
-            echt_get_html = tm.get_html
-
-            def zonder_koplinks(url, *, key="transfermarkt", _echt=echt_get_html):
-                html = _echt(url, key=key)
+            # forceer de fallback door de sorteerlinks uit de kop te strippen
+            # (blijft uit de fixtures lezen, geen netwerk)
+            def zonder_koplinks(url, *, key="transfermarkt", _nep=nep):
+                html = _nep.get_html(url, key=key)
                 if "leistungsdaten" in url:
                     html = re.sub(r'href="[^"]*/sort/[^"]*"', 'href="#"', html)
                 return html
 
             with NepHttp(scen):
                 tm.get_html = zonder_koplinks
-                try:
-                    fallback = tm.fetch(ploeg=ploeg)["spelers"]
-                finally:
-                    tm.get_html = echt_get_html
+                fallback = tm.fetch(ploeg=ploeg)["spelers"]
 
             self.assertEqual(len(op_kop), len(fallback), scen)
             for a, b in zip(op_kop, fallback):

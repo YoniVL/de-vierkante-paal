@@ -346,10 +346,13 @@ def _praatpunten(overzicht: dict) -> list[str]:
 
 
 def _bron_status() -> dict:
-    """Per bron: 'ok' | 'verouderd' (>8u) | 'leeg' (nooit) | 'fout'."""
+    """Per bron: 'ok' | 'verouderd' | 'leeg' (nooit) | 'fout'."""
     fouten = store.get_kv("fouten", {}) or {}
+    # teamstats en de voorbeschouwing verversen per speeldag, niet per uur
+    grens = {"sofascore": 8, "transfermarkt": 8, "fotmob": 8,
+             "voorbeschouwing": 26, "teamstats": 26}
     uit: dict[str, str] = {}
-    for naam in ("sofascore", "transfermarkt", "fotmob", "voorbeschouwing", "teamstats"):
+    for naam, uur in grens.items():
         if naam in fouten:
             uit[naam] = "fout"
             continue
@@ -361,7 +364,7 @@ def _bron_status() -> dict:
             oud = (_dt.datetime.now() - _dt.datetime.fromisoformat(ts)).total_seconds()
         except ValueError:
             oud = 0
-        uit[naam] = "verouderd" if oud > 8 * 3600 else "ok"
+        uit[naam] = "verouderd" if oud > uur * 3600 else "ok"
     return uit
 
 

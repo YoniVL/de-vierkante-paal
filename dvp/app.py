@@ -14,11 +14,12 @@ import traceback
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from . import aggregate, assets, competities, config, export, mdrender, merk, ploeg, store
+from .names import _CLUB_STOPWOORDEN, kernwoord, normaliseer
 from .sources import fotmob, preview, sofascore, teamstats, transfermarkt
 
 _TEMPLATES = Path(__file__).parent / "templates"
@@ -339,8 +340,6 @@ _FM_ZOEKALIAS = {
 
 def _naam_varianten(naam: str) -> list[str]:
     """Zoektermen van specifiek naar breed, om een ploeg toch te vinden."""
-    from .names import _CLUB_STOPWOORDEN, kernwoord, normaliseer
-
     extra = _FM_ZOEKALIAS.get(normaliseer(naam))
     woorden = normaliseer(naam).split()
     zonder = [w for w in woorden if w not in _CLUB_STOPWOORDEN and len(w) > 2]
@@ -368,8 +367,6 @@ def _zoek_fotmob(naam: str) -> list[dict]:
 
 def _resolveer_ploeg(ut: int, sofascore_id: int, naam: str) -> dict:
     """Zoek de FotMob- en Transfermarkt-tegenhangers van een Sofascore-ploeg."""
-    from .names import normaliseer
-
     comp = competities.by_ut(ut) or {}
     comp_woorden = set(normaliseer(
         (comp.get("fotmob_comp") or "") + " " + comp.get("naam", "") + " " + comp.get("land", "")
@@ -580,7 +577,6 @@ class Handler(BaseHTTPRequestHandler):
                     _start_ververs("all")
                     self._redirect("/")
                 elif sid and (form.get("ut") or [""])[0]:
-                    from urllib.parse import urlencode
                     q = urlencode({"ut": (form.get("ut") or [""])[0], "sofascore_id": sid,
                                    "naam": (form.get("naam") or [""])[0]})
                     self._redirect("/kies-ploeg?" + q)
@@ -604,7 +600,6 @@ class Handler(BaseHTTPRequestHandler):
                 van = (form.get("van") or [""])[0].strip()
                 naar = (form.get("naar") or [""])[0].strip()
                 if van and naar:
-                    from .names import normaliseer
                     aliassen = store.get_kv("aliassen", {}) or {}
                     aliassen[normaliseer(van)] = naar
                     store.set_kv("aliassen", aliassen)

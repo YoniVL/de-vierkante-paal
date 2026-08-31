@@ -228,10 +228,10 @@ def naar_markdown(o: dict) -> str:
             r.append(f"- Per match: {s.get('goals_pm')} goals · {s.get('schoten_pm')} schoten · "
                      f"{s.get('tegen_pm')} tegen · {s.get('geel_pm')} geel")
             tu = P.get("thuisuit") or {}
-            for veld in ("thuis", "uit"):
-                d = tu.get(veld)
+            for kant in ("thuis", "uit"):
+                d = tu.get(kant)
                 if d:
-                    r.append(f"- {veld.capitalize()}: {d['w']}W-{d['g']}G-{d['v']}V · "
+                    r.append(f"- {kant.capitalize()}: {d['w']}W-{d['g']}G-{d['v']}V · "
                              f"{d['dp_voor']}-{d['dp_tegen']} · {d['punten']} ptn")
             if s.get("pen_genomen") is not None:
                 r.append(f"- Strafschoppen: {s.get('pen_benut')}/{s.get('pen_genomen')} benut · "
@@ -260,9 +260,8 @@ def naar_markdown(o: dict) -> str:
             if sel and sel.get("waarde_totaal_m"):
                 r.append(f"- Selectie: € {sel['waarde_totaal_m']} mln · {sel.get('kader')} spelers · "
                          f"Ø {sel.get('leeftijd')} j · {sel.get('buitenlanders')} buitenlanders")
-            rk = P.get("ranking") or []
             uitschieters = [f"{x['label']} {x['rank']}e ({x['markering']})"
-                            for x in rk if x.get("markering")]
+                            for x in (P.get("ranking") or []) if x.get("markering")]
             if uitschieters:
                 r.append(f"- Opvallend in de competitie: {' · '.join(uitschieters)}")
 
