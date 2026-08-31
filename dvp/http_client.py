@@ -1,8 +1,9 @@
 """Gedeelde HTTP-helpers.
 
-Sofascore blokkeert 'gewone' Python-requests op TLS-niveau; daarvoor gebruiken we
-curl_cffi met een Chrome-fingerprint. Transfermarkt werkt met een gewone request
-mits een browser-User-Agent.
+Sofascore blokkeert 'gewone' Python-requests op TLS-niveau. Op de desktop lossen
+we dat op met curl_cffi (Chrome-fingerprint); op Android zet ``android_start``
+een eigen backend (``json_backend`` / ``html_backend``) die via Android's eigen
+netwerklaag gaat — die heeft dezelfde fingerprint als Chrome.
 """
 
 from __future__ import annotations
@@ -18,6 +19,10 @@ _last_call: dict[str, float] = {}
 # Pauze (s) tussen opeenvolgende requests naar dezelfde bron.
 _PAUZE = {"sofascore": 0.35, "fotmob": 0.5, "transfermarkt": 0.8}
 
+# Optionele vervangers (bv. Android). None = de standaard-implementatie hieronder.
+json_backend = None   # (url: str, key: str) -> dict
+html_backend = None   # (url: str, key: str) -> str
+
 
 def _throttle(key: str) -> None:
     pauze = _PAUZE.get(key, config.REQUEST_PAUSE)
@@ -29,18 +34,22 @@ def _throttle(key: str) -> None:
 
 
 def get_json_impersonated(url: str, *, key: str = "sofascore") -> dict:
-    """GET een JSON-endpoint met een Chrome-fingerprint (curl_cffi)."""
-    from curl_cffi import requests as creq  # lazy import
-
+    """GET een JSON-endpoint met een browser-fingerprint."""
     _throttle(key)
+    if json_backend is not None:
+        return json_backend(url, key)
+    from curl_cffi import requests as creq  # lazy import (niet op Android)
+
     resp = creq.get(url, impersonate="chrome", timeout=config.REQUEST_TIMEOUT)
     resp.raise_for_status()
     return resp.json()
 
 
 def get_html(url: str, *, key: str = "transfermarkt") -> str:
-    """GET een HTML-pagina met een gewone browser-User-Agent."""
+    """GET een HTML-pagina met een browser-User-Agent."""
     _throttle(key)
+    if html_backend is not None:
+        return html_backend(url, key)
     req = urllib.request.Request(
         url,
         headers={
