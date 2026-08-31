@@ -329,6 +329,19 @@ def _praatpunten(overzicht: dict) -> list[str]:
         s = sh_goals[0]
         uit.append(f"⭐ Gevaarlijkste man {teg}: {s['naam']} ({s['waarde']} goals).")
 
+    # opvallend doelpunt-type-patroon (uit de teamstatistieken)
+    for pl in (overzicht.get("teamstats") or {}).get("ploegen", []):
+        dp = pl.get("doelpunten") or {}
+        for kant, woord in (("gescoord", "maakt"), ("geincasseerd", "slikt")):
+            blok = dp.get(kant) or {}
+            tot = blok.get("totaal") or 0
+            fases = blok.get("fases") or {}
+            if tot >= 6 and fases:
+                fase, n = max(fases.items(), key=lambda x: x[1])
+                if fase not in ("Open spel", "Eigen doelpunt") and n / tot >= 0.33:
+                    uit.append(f"🎯 {pl['naam']} {woord} veel doelpunten via "
+                               f"“{fase.lower()}” ({n} van {tot}).")
+
     return uit
 
 
@@ -336,7 +349,7 @@ def _bron_status() -> dict:
     """Per bron: 'ok' | 'verouderd' (>8u) | 'leeg' (nooit) | 'fout'."""
     fouten = store.get_kv("fouten", {}) or {}
     uit: dict[str, str] = {}
-    for naam in ("sofascore", "transfermarkt", "fotmob", "voorbeschouwing"):
+    for naam in ("sofascore", "transfermarkt", "fotmob", "voorbeschouwing", "teamstats"):
         if naam in fouten:
             uit[naam] = "fout"
             continue
@@ -357,6 +370,7 @@ def bouw_overzicht() -> dict:
     transfermarkt = store.get_kv("bron:transfermarkt", {})
     fotmob = store.get_kv("bron:fotmob", {})
     voorbeschouwing_extra = store.get_kv("bron:voorbeschouwing", {})
+    teamstats = store.get_kv("bron:teamstats", {})
 
     event_id = (sofascore.get("vorige") or {}).get("event_id")
     scoretabel = bouw_scoretabel(sofascore, fotmob, event_id)
@@ -368,6 +382,7 @@ def bouw_overzicht() -> dict:
         "transfermarkt": transfermarkt,
         "fotmob": fotmob,
         "voorbeschouwing_extra": voorbeschouwing_extra,
+        "teamstats": teamstats,
         "event_id": event_id,
         "scoretabel": scoretabel,
         "stattabel": stattabel,
@@ -382,6 +397,7 @@ def bouw_overzicht() -> dict:
             "transfermarkt": store.get_kv_updated("bron:transfermarkt"),
             "fotmob": store.get_kv_updated("bron:fotmob"),
             "voorbeschouwing": store.get_kv_updated("bron:voorbeschouwing"),
+            "teamstats": store.get_kv_updated("bron:teamstats"),
         },
         "bron_status": _bron_status(),
     }

@@ -24,7 +24,7 @@ from dvp import config, http_client, store  # noqa: E402
 _tmp = Path(tempfile.mkdtemp(prefix="dvp_opnemen_"))
 config.DATA_DIR = _tmp
 config.DB_PATH = _tmp / "opnemen.sqlite"
-from dvp.sources import fotmob, preview, sofascore, transfermarkt  # noqa: E402
+from dvp.sources import fotmob, preview, sofascore, teamstats, transfermarkt  # noqa: E402
 from tests.nep_http import FIXTURES, bestandsnaam, schrijf_fixture  # noqa: E402
 
 # scenario -> ploeg-dict (zoals ploeg.actieve() er een teruggeeft)
@@ -67,6 +67,7 @@ def neem_op(scenario: str, ploeg: dict) -> None:
     rec_json, rec_html = _maak_opnemers(doelmap)
     sofascore._get = rec_json
     fotmob._get = rec_json
+    teamstats._get = rec_json
     transfermarkt.get_html = rec_html
 
     print(f"\n=== {scenario} ({ploeg['naam']}) ===")
@@ -82,6 +83,8 @@ def neem_op(scenario: str, ploeg: dict) -> None:
     print(f"  transfermarkt: {len(tm.get('spelers') or [])} spelers")
     pv = preview.fetch(so, [s['speler'] for s in (tm.get('spelers') or [])], ploeg)
     print(f"  preview: tegenstander={pv.get('tegenstander_naam')}")
+    ts = teamstats.fetch(so, ploeg)
+    print(f"  teamstats: {len(ts.get('ploegen') or [])} ploegen, status={ts.get('status')}")
 
     n = len(list(doelmap.iterdir()))
     print(f"  -> {n} fixture-bestanden")

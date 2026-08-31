@@ -215,6 +215,40 @@ def naar_markdown(o: dict) -> str:
             r.append("**Ex-" + teg + ", nu bij Antwerp:** "
                      + ", ".join(f"{c['speler']}" for c in con["ex_tegenstander_bij_antwerp"]))
 
+    # 2b. Teamstatistieken
+    tsd = o.get("teamstats") or {}
+    if tsd.get("ploegen") and len(tsd["ploegen"]) == 2:
+        r.append(f"\n## Teamstatistieken — {tsd.get('competitie', '')}")
+        for P in tsd["ploegen"]:
+            s = P["seizoen"]
+            r.append(f"\n### {P['naam']} ({P['rol']})")
+            r.append(f"- Seizoen: {s.get('matches')} matchen · {s.get('goals')} voor / "
+                     f"{s.get('tegen')} tegen · rating {s.get('rating')} · balbezit {s.get('balbezit')}% · "
+                     f"xG {s.get('xg')}")
+            r.append(f"- Per match: {s.get('goals_pm')} goals · {s.get('schoten_pm')} schoten · "
+                     f"{s.get('tegen_pm')} tegen · {s.get('geel_pm')} geel")
+            tu = P.get("thuisuit") or {}
+            for veld in ("thuis", "uit"):
+                d = tu.get(veld)
+                if d:
+                    r.append(f"- {veld.capitalize()}: {d['w']}W-{d['g']}G-{d['v']}V · "
+                             f"{d['dp_voor']}-{d['dp_tegen']} · {d['punten']} ptn")
+            dp = P.get("doelpunten")
+            if dp and dp.get("matchen_met_data"):
+                gv = ", ".join(f"{k} {v}" for k, v in sorted(
+                    dp["gescoord"]["fases"].items(), key=lambda x: -x[1]))
+                gi = ", ".join(f"{k} {v}" for k, v in sorted(
+                    dp["geincasseerd"]["fases"].items(), key=lambda x: -x[1]))
+                r.append(f"- Doelpunten gescoord ({dp['gescoord']['totaal']}): {gv or '–'}")
+                r.append(f"- Doelpunten geïncasseerd ({dp['geincasseerd']['totaal']}): {gi or '–'}")
+                r.append(f"- Timing goals voor/tegen per kwartier "
+                         f"({' · '.join(dp['timing_labels'])}): "
+                         f"{dp['timing_voor']} / {dp['timing_tegen']}")
+            sel = P.get("selectie")
+            if sel and sel.get("waarde_totaal_m"):
+                r.append(f"- Selectie: € {sel['waarde_totaal_m']} mln · {sel.get('kader')} spelers · "
+                         f"Ø {sel.get('leeftijd')} j · {sel.get('buitenlanders')} buitenlanders")
+
     # 3. Statistieken
     if o.get("stattabel"):
         tm = o.get("transfermarkt") or {}

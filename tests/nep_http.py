@@ -62,6 +62,7 @@ class NepHttp:
             ("dvp.sources.sofascore._get", self.get_json),
             ("dvp.sources.fotmob._get", self.get_json),
             ("dvp.sources.transfermarkt.get_html", self.get_html),
+            ("dvp.sources.teamstats._get", self.get_json),
         ):
             p = mock.patch(doel, fn)
             p.start()

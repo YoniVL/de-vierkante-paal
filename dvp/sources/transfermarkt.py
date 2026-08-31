@@ -187,6 +187,54 @@ def kader(club_id: int, club_slug: str, seizoen: int | None = None) -> list[str]
     ]
 
 
+def _waarde_naar_m(tekst: str) -> float | None:
+    """'€38.90m' / '€900k' / '€1.20bn' -> miljoen euro."""
+    m = re.search(r"([\d.,]+)\s*(bn|m|k)?", (tekst or "").replace("\xa0", " "), re.IGNORECASE)
+    if not m:
+        return None
+    try:
+        getal = float(m.group(1).replace(",", ""))
+    except ValueError:
+        return None
+    eenheid = (m.group(2) or "m").lower()
+    factor = {"bn": 1000.0, "m": 1.0, "k": 0.001}.get(eenheid, 1.0)
+    return round(getal * factor, 2)
+
+
+def club_profiel(club_id: int, club_slug: str) -> dict:
+    """Kerncijfers van een club: marktwaarde, kadergrootte, gemiddelde leeftijd,
+    aantal buitenlanders (van de startseite-kop)."""
+    url = f"{BASE}/{club_slug}/startseite/verein/{club_id}"
+    out: dict = {"bron_url": url}
+    try:
+        soup = BeautifulSoup(get_html(url, key="transfermarkt"), "html.parser")
+    except Exception:
+        return out
+
+    mv = soup.select_one(".data-header__market-value-wrapper")
+    if mv:
+        out["waarde_totaal_m"] = _waarde_naar_m(mv.get_text(" ", strip=True))
+
+    for li in soup.select("li.data-header__label"):
+        tekst = re.sub(r"\s+", " ", li.get_text(" ", strip=True))
+        if ":" not in tekst:
+            continue
+        label, waarde = (deel.strip() for deel in tekst.split(":", 1))
+        low = label.lower()
+        if "squad size" in low or "kader" in low:
+            out["kader"] = _getal(waarde)
+        elif "average age" in low or "durchschnittsalter" in low or "alter" in low:
+            m = re.search(r"[\d.]+", waarde)
+            out["leeftijd"] = float(m.group()) if m else None
+        elif "foreigners" in low or "legionäre" in low or "legionare" in low:
+            m = re.search(r"\d+", waarde)
+            out["buitenlanders"] = int(m.group()) if m else None
+
+    if out.get("waarde_totaal_m") and out.get("kader"):
+        out["waarde_gem_m"] = round(out["waarde_totaal_m"] / out["kader"], 2)
+    return out
+
+
 def blessures_schorsingen(club_id: int, club_slug: str) -> dict:
     """Geblesseerde en geschorste spelers (mist de volgende wedstrijd)."""
     url = f"{BASE}/{club_slug}/sperrenundverletzungen/verein/{club_id}"

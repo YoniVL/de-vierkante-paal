@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from dvp import aggregate, config, store  # noqa: E402
-from dvp.sources import fotmob, preview, sofascore, transfermarkt  # noqa: E402
+from dvp.sources import fotmob, preview, sofascore, teamstats, transfermarkt  # noqa: E402
 from tests.nep_http import NepHttp  # noqa: E402
 from tests.opnemen import SCENARIOS  # noqa: E402
 
@@ -48,6 +48,8 @@ class ScraperTests(unittest.TestCase):
             store.set_kv("bron:transfermarkt", cls.tm)
             store.save_stat_snapshot(aggregate.snapshot_rijen(cls.tm), "ss" + str(cls.ploeg["sofascore_id"]))
             store.set_kv("bron:voorbeschouwing", cls.pv)
+            cls.ts = teamstats.fetch(cls.so, cls.ploeg)
+            store.set_kv("bron:teamstats", cls.ts)
             cls.ov = aggregate.bouw_overzicht()
 
     # --- Sofascore ---------------------------------------------------
@@ -108,6 +110,29 @@ class ScraperTests(unittest.TestCase):
         met_link = [r for r in o["scoretabel"] if r.get("profiel_url")]
         self.assertGreaterEqual(len(met_link), len(o["scoretabel"]) // 2)
         self.assertIn("diagnose", o)
+
+    def test_teamstats(self):
+        ts = self.ts
+        self.assertEqual(ts["status"], "ok")
+        self.assertEqual(len(ts["ploegen"]), 2)
+        rollen = {p["rol"] for p in ts["ploegen"]}
+        self.assertEqual(rollen, {"thuis", "uit"})
+        for p in ts["ploegen"]:
+            self.assertTrue(p["naam"])
+            self.assertGreaterEqual(p["seizoen"]["matches"], 1)
+            self.assertIsNotNone(p["seizoen"]["goals"])
+            dp = p["doelpunten"]
+            self.assertIsNotNone(dp)
+            self.assertGreaterEqual(dp["matchen_met_data"], 1)
+            # shotmap-goals ~= Sofascore-seizoensgoals (competitie), kleine marge voor eigen goals/gaten
+            self.assertLessEqual(abs(dp["gescoord"]["totaal"] - (p["seizoen"]["goals"] or 0)), 3)
+            self.assertEqual(len(dp["timing_voor"]), 6)
+            self.assertEqual(sum(dp["timing_voor"]), dp["gescoord"]["totaal"])
+            self.assertEqual(sum(dp["timing_tegen"]), dp["geincasseerd"]["totaal"])
+            self.assertTrue(p["ranking"])
+            self.assertTrue(p["selectie"]["waarde_totaal_m"] > 0)
+        # aggregatie neemt het mee
+        self.assertTrue(self.ov["teamstats"]["ploegen"])
 
     def test_praatpunten(self):
         pp = self.ov["praatpunten"]

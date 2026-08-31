@@ -4,7 +4,7 @@ Lokale tool om een aflevering van de podcast rond **Royal Antwerp FC** voor te b
 Ze verzamelt automatisch de feiten en cijfers; de teksten schrijf je zelf.
 
 De tool is verdeeld in **tabbladen** bovenaan: Vorige wedstrijd · Voorbeschouwing ·
-Statistieken · Diagnose · Export · Handleiding.
+Statistieken · Teamstatistieken · Diagnose · Export · Handleiding.
 
 Bovenaan de pagina staat een **Praatpunten**-blok: de belangrijkste cijfers (stand + kloof,
 vorm, onderlinge balans, scheidsrechter, ex-spelers, afwezigen, topschutters) automatisch
@@ -42,6 +42,16 @@ staat een korte uitleg voor redactieleden.
 Per speler: wedstrijden, goals, assists, **gele en rode kaarten**, minuten en gemiddelde
 Sofascore-rating. **Sorteerbaar** op elke kolom, met het verschil sinds de vorige verversing.
 Bovenaan de **geschorste** (mist de volgende match) en geblesseerde Antwerp-spelers.
+
+### Teamstatistieken
+De twee ploegen van de volgende match naast elkaar (toggle **Vergelijken / Thuisploeg /
+Uitploeg**): seizoenscijfers, xG-balans, aanval, verdediging, opbouw, discipline en de
+**thuis/uit-splitsing** (Sofascore). Per ploeg ook: **welke types doelpunten** ze maken
+én incasseren (open spel · tegenaanval · strafschop · stilstaande fase · uit corner ·
+voet/kop · binnen/buiten de zestien), **wanneer** die vallen (per kwartier), de **ranking
+in de competitie** (FotMob) en het **selectie-profiel** (marktwaarde, leeftijd, kadergrootte
+— Transfermarkt). Zit achter de aparte knop **teamstats**: die haalt de shotmap van elke
+gespeelde competitiematch op (de eerste keer ~1 min, daarna alleen de nieuwe matchen).
 
 ### Diagnose
 Spelers/clubs die de tool niet automatisch kon koppelen tussen de bronnen, plus een

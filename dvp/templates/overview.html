@@ -198,6 +198,47 @@
        border-radius:8px;padding:9px 13px;font-size:14px;line-height:1.45}
   .praatpunten .leeg{color:var(--grijs);font-size:13px;padding:0 20px 14px}
 
+  /* teamstatistieken */
+  .ts-kop{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .ts-namen{font-size:14px;font-weight:700}
+  .ts-toggle{display:flex;gap:4px}
+  .ts-toggle button{background:var(--vlak-2);border:1px solid var(--lijn);color:var(--grijs);
+       border-radius:7px;padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .ts-toggle button.actief{background:var(--rood);color:#12151a;border-color:var(--rood)}
+  .ts-rijen{display:grid;gap:5px;margin:4px 0 6px}
+  .ts-rij{display:grid;grid-template-columns:52px 1fr 52px;align-items:center;gap:8px;font-size:13px}
+  .ts-rij b{font-variant-numeric:tabular-nums;font-weight:700}
+  .ts-rij .ts-a{text-align:right} .ts-rij .ts-b{text-align:left}
+  .ts-rij b.win{color:var(--goed)}
+  .ts-mid{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .ts-lbl{font-size:11px;color:var(--grijs);text-align:center;text-transform:uppercase;letter-spacing:.03em}
+  .ts-track{display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--lijn)}
+  .ts-track i.l{background:var(--ant)} .ts-track i.r{background:var(--teg)}
+  .ts-detail{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+  @media(max-width:720px){.ts-detail{grid-template-columns:1fr}}
+  .ts[data-modus=thuis] .ts-detail .ts-kaart[data-rol=uit],
+  .ts[data-modus=uit] .ts-detail .ts-kaart[data-rol=thuis]{display:none}
+  .ts[data-modus=thuis] .ts-detail,.ts[data-modus=uit] .ts-detail{grid-template-columns:1fr;max-width:520px}
+  .ts-kaart{border:1px solid var(--lijn);border-radius:9px;padding:12px 14px;background:var(--vlak-2)}
+  .ts-kaart h4{color:var(--rood);font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px}
+  .ts-kaart h5{font-size:11.5px;color:var(--grijs);text-transform:uppercase;letter-spacing:.03em;
+       font-weight:700;margin:12px 0 5px}
+  .ts-kaart h5:first-of-type{margin-top:0}
+  .ts-kaart ul{list-style:none;padding:0;margin:0;font-size:12.5px;display:grid;gap:2px}
+  .vb{display:grid;gap:3px}
+  .vb-rij{display:grid;grid-template-columns:96px 1fr 26px;align-items:center;gap:6px;font-size:12px}
+  .vb-l{color:var(--inkt)} .vb-n{text-align:right;font-variant-numeric:tabular-nums;color:var(--grijs)}
+  .vb-track{height:8px;border-radius:4px;background:var(--lijn);overflow:hidden}
+  .vb-track i{display:block;height:100%;background:var(--rood)}
+  .ts-kaart .tegen .vb-track i{background:var(--teg)}
+  .tm{display:flex;gap:3px;align-items:flex-end;height:70px;margin:2px 0 4px}
+  .tm-kol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%}
+  .tm-baren{flex:1;display:flex;align-items:flex-end;gap:2px;width:100%;justify-content:center}
+  .tm-baren i{width:8px;border-radius:2px 2px 0 0} .tm-baren i.v{background:var(--goed)} .tm-baren i.t{background:var(--slecht)}
+  .tm-l{font-size:9px;color:var(--grijs);white-space:nowrap}
+  .ts-legende{font-size:11px;color:var(--grijs);display:flex;gap:12px;margin-top:2px}
+  .ts-legende i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle}
+
   .hlp{font-size:14px;line-height:1.6;max-width:760px}
   .hlp h3{margin-top:22px}
   .hlp p{margin:6px 0}
@@ -368,7 +409,7 @@
   <section>
     <div class="bar" id="ververs-knoppen">
       <button class="btn" data-bron="all">↻ Ververs alles</button>
-      {% for b in ["sofascore","fotmob","transfermarkt","voorbeschouwing"] %}
+      {% for b in ["sofascore","fotmob","transfermarkt","voorbeschouwing","teamstats"] %}
       <button class="btn grijs klein" data-bron="{{ b }}">{{ b }}</button>
       {% endfor %}
       <a class="btn grijs klein" href="/export.md" target="_blank">export .md</a>
@@ -384,7 +425,7 @@
     <div class="stempel">
       {%- set _st = o.bron_status or {} -%}
       {%- set _iconen = {'ok':'✓','verouderd':'⏱','leeg':'–','fout':'✕'} -%}
-      {%- for sleutel, label in [('sofascore','Sofascore'),('fotmob','FotMob'),('transfermarkt','Transfermarkt'),('voorbeschouwing','Voorbeschouwing')] %}
+      {%- for sleutel, label in [('sofascore','Sofascore'),('fotmob','FotMob'),('transfermarkt','Transfermarkt'),('voorbeschouwing','Voorbeschouwing'),('teamstats','Teamstats')] %}
         {%- set s = _st.get(sleutel, 'leeg') -%}
         <span class="bs bs-{{ s }}" title="{{ {'ok':'up-to-date','verouderd':'ouder dan 8u — ververs','leeg':'nog niet opgehaald','fout':'ophalen mislukt of geen bruikbare data'}[s] }}">{{ _iconen[s] }} {{ label }}</span>
         <span class="g">{{ o.tijdstippen[sleutel]|dt }}</span>{% if not loop.last %} · {% endif %}
@@ -413,6 +454,7 @@
     <button data-tab="wedstrijd" class="actief">Vorige wedstrijd</button>
     <button data-tab="voorbeschouwing">Voorbeschouwing</button>
     <button data-tab="statistieken">Statistieken</button>
+    <button data-tab="teamstats">Teamstatistieken</button>
     <button data-tab="diagnose">Diagnose</button>
     <button data-tab="export">Export</button>
     <button data-tab="handleiding">Handleiding</button>
@@ -864,6 +906,208 @@
   </section>
   </div><!-- /tab statistieken -->
 
+  <div class="tab" data-tab="teamstats">
+  <section>
+    <h2>Teamstatistieken</h2>
+    {% set tsd = o.teamstats %}
+    {% if not tsd or not tsd.ploegen or tsd.ploegen|length < 2 %}
+      <p class="muted">Nog niet opgehaald. Klik bovenaan op <strong>teamstats</strong>.
+        Dit haalt de shotmap van elke gespeelde competitiematch van beide ploegen op —
+        de eerste keer kan dat ~1 minuut duren, daarna alleen de nieuwe matchen.</p>
+      {% if tsd and tsd.status and tsd.status != 'ok' %}
+        <p class="muted">{{ tsd.status.tekst if tsd.status is mapping else tsd.status }}</p>
+      {% endif %}
+    {% else %}
+    {% set A = tsd.ploegen[0] %}{% set B = tsd.ploegen[1] %}
+
+    {%- macro getal(x) -%}
+      {%- if x is none -%}–
+      {%- elif x is number -%}{%- set r = x|round(2) -%}{{ r|int if r == r|round(0) else r }}
+      {%- else -%}{{ x }}{%- endif -%}
+    {%- endmacro -%}
+
+    {%- macro rij(label, a, b, beter='hoog') -%}
+      {%- set an = a if (a is number and a > 0) else 0 -%}{%- set bn = b if (b is number and b > 0) else 0 -%}
+      {%- set tot = (an + bn) if (an + bn) else 1 -%}
+      {%- set apct = (100 * an / tot)|round(0, 'common')|int -%}
+      {%- set awin = (a is number and b is number) and ((a > b) if beter=='hoog' else (a < b) if beter=='laag' else false) -%}
+      {%- set bwin = (a is number and b is number) and ((b > a) if beter=='hoog' else (b < a) if beter=='laag' else false) -%}
+      <div class="ts-rij">
+        <b class="ts-a {{ 'win' if awin }}">{{ getal(a) }}</b>
+        <span class="ts-mid">
+          <span class="ts-lbl">{{ label }}</span>
+          <span class="ts-track"><i class="l" style="width:{{ apct }}%"></i><i class="r" style="width:{{ 100 - apct }}%"></i></span>
+        </span>
+        <b class="ts-b {{ 'win' if bwin }}">{{ getal(b) }}</b>
+      </div>
+    {%- endmacro -%}
+
+    {%- macro verdeel(d, klasse='') -%}
+      {%- set tot = (d.values()|sum) if d else 0 -%}
+      <div class="vb {{ klasse }}">
+        {% for naam, n in d|dictsort(by='value', reverse=true) %}
+        <div class="vb-rij">
+          <span class="vb-l">{{ naam }}</span>
+          <span class="vb-track"><i style="width:{{ (100 * n / (tot or 1))|round(0,'common')|int }}%"></i></span>
+          <span class="vb-n">{{ n }}</span>
+        </div>
+        {% else %}<p class="muted" style="font-size:12px">geen data</p>{% endfor %}
+      </div>
+    {%- endmacro -%}
+
+    {%- macro timing(dp) -%}
+      {%- set mx = ([dp.timing_voor|max, dp.timing_tegen|max]|max) or 1 -%}
+      <div class="tm">
+        {% for i in range(6) %}
+        <div class="tm-kol">
+          <div class="tm-baren">
+            <i class="v" style="height:{{ (100 * dp.timing_voor[i] / mx)|round(0,'common')|int }}%" title="{{ dp.timing_voor[i] }} voor"></i>
+            <i class="t" style="height:{{ (100 * dp.timing_tegen[i] / mx)|round(0,'common')|int }}%" title="{{ dp.timing_tegen[i] }} tegen"></i>
+          </div>
+          <span class="tm-l">{{ dp.timing_labels[i] }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="ts-legende"><span><i style="background:var(--goed)"></i>gescoord</span><span><i style="background:var(--slecht)"></i>geïncasseerd</span></div>
+    {%- endmacro -%}
+
+    <div class="ts" id="ts" data-modus="vergelijk">
+      <div class="ts-kop">
+        <div class="ts-namen"><span class="ant">{{ A.naam }}</span> <span class="muted">thuis</span>
+          &nbsp;—&nbsp; <span class="teg">{{ B.naam }}</span> <span class="muted">uit</span></div>
+        <div class="ts-toggle">
+          <button type="button" data-modus="vergelijk" class="actief">Vergelijken</button>
+          <button type="button" data-modus="thuis">{{ A.naam }}</button>
+          <button type="button" data-modus="uit">{{ B.naam }}</button>
+        </div>
+      </div>
+      {% if (A.seizoen.matches or 0) < 5 or (B.seizoen.matches or 0) < 5 %}
+      <p class="muted">⚠ Nog weinig matchen gespeeld — deze cijfers zijn voorlopig volatiel.</p>
+      {% endif %}
+
+      <h3>Seizoen — {{ tsd.competitie }}</h3>
+      <div class="ts-rijen">
+        {{ rij('Wedstrijden', A.seizoen.matches, B.seizoen.matches, 'geen') }}
+        {{ rij('Gem. teamrating', A.seizoen.rating, B.seizoen.rating) }}
+        {{ rij('Doelpunten', A.seizoen.goals, B.seizoen.goals) }}
+        {{ rij('Tegendoelpunten', A.seizoen.tegen, B.seizoen.tegen, 'laag') }}
+        {{ rij('Clean sheets', A.seizoen.clean_sheets, B.seizoen.clean_sheets) }}
+        {{ rij('Balbezit %', A.seizoen.balbezit, B.seizoen.balbezit, 'geen') }}
+      </div>
+
+      <h3>xG-balans</h3>
+      <div class="ts-rijen">
+        {% if A.doelpunten and B.doelpunten %}
+        {{ rij('xG voor', A.doelpunten.xg_voor, B.doelpunten.xg_voor) }}
+        {{ rij('xG tegen', A.doelpunten.xg_tegen, B.doelpunten.xg_tegen, 'laag') }}
+        {{ rij('Goals − xG (voor)', (A.seizoen.goals or 0) - A.doelpunten.xg_voor, (B.seizoen.goals or 0) - B.doelpunten.xg_voor, 'geen') }}
+        {% endif %}
+        {{ rij('xG (Sofascore)', A.seizoen.xg, B.seizoen.xg) }}
+        {{ rij('Goals prevented (keeper)', A.seizoen.goals_prevented, B.seizoen.goals_prevented, 'geen') }}
+      </div>
+
+      <h3>Aanval</h3>
+      <div class="ts-rijen">
+        {{ rij('Goals per match', A.seizoen.goals_pm, B.seizoen.goals_pm) }}
+        {{ rij('Schoten per match', A.seizoen.schoten_pm, B.seizoen.schoten_pm) }}
+        {{ rij('Op doel per match', A.seizoen.op_doel_pm, B.seizoen.op_doel_pm) }}
+        {{ rij('Conversie %', A.seizoen.conversie, B.seizoen.conversie) }}
+        {{ rij('Grote kansen', A.seizoen.grote_kansen, B.seizoen.grote_kansen) }}
+        {{ rij('Grote kansen gemist', A.seizoen.grote_kansen_gemist, B.seizoen.grote_kansen_gemist, 'laag') }}
+        {{ rij('Corners per match', A.seizoen.corners_pm, B.seizoen.corners_pm) }}
+      </div>
+
+      <h3>Verdediging</h3>
+      <div class="ts-rijen">
+        {{ rij('Tegengoals per match', A.seizoen.tegen_pm, B.seizoen.tegen_pm, 'laag') }}
+        {{ rij('Schoten tegen per match', A.seizoen.schoten_tegen_pm, B.seizoen.schoten_tegen_pm, 'laag') }}
+        {{ rij('Grote kansen tegen', A.seizoen.grote_kansen_tegen, B.seizoen.grote_kansen_tegen, 'laag') }}
+        {{ rij('Tackles per match', A.seizoen.tackles_pm, B.seizoen.tackles_pm) }}
+        {{ rij('Intercepties per match', A.seizoen.intercepties_pm, B.seizoen.intercepties_pm) }}
+        {{ rij('Clearances per match', A.seizoen.clearances_pm, B.seizoen.clearances_pm, 'geen') }}
+        {{ rij('Fouten → goal', A.seizoen.fouten_naar_goal, B.seizoen.fouten_naar_goal, 'laag') }}
+        {{ rij('Reddingen per match', A.seizoen.reddingen_pm, B.seizoen.reddingen_pm, 'geen') }}
+      </div>
+
+      <h3>Opbouw &amp; stijl</h3>
+      <div class="ts-rijen">
+        {{ rij('Passes per match', A.seizoen.passes_pm, B.seizoen.passes_pm, 'geen') }}
+        {{ rij('Passaccuraatheid %', A.seizoen.pass_pct, B.seizoen.pass_pct) }}
+        {{ rij('Lange ballen %', A.seizoen.lange_bal_pct, B.seizoen.lange_bal_pct, 'geen') }}
+        {{ rij('Buitenspel per match', A.seizoen.buitenspel_pm, B.seizoen.buitenspel_pm, 'geen') }}
+      </div>
+
+      <h3>Discipline</h3>
+      <div class="ts-rijen">
+        {{ rij('Geel per match', A.seizoen.geel_pm, B.seizoen.geel_pm, 'laag') }}
+        {{ rij('Rood (totaal)', A.seizoen.rood, B.seizoen.rood, 'laag') }}
+      </div>
+
+      <h3>Thuis vs uit <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">— de helft die voor deze match telt</span></h3>
+      <div class="tablescroll"><table>
+        <thead><tr><th>Ploeg</th><th class="num">Gesp.</th><th class="num">W</th><th class="num">G</th><th class="num">V</th>
+          <th class="num">DP+</th><th class="num">DP−</th><th class="num">Ptn</th><th class="num">Ptn/match</th></tr></thead>
+        <tbody>
+          {% for P, veld, wie in [(A, 'thuis', 'thuis'), (B, 'uit', 'uit')] %}
+          {% set d = P.thuisuit[veld] if P.thuisuit and P.thuisuit[veld] else none %}
+          <tr>
+            <td><span class="{{ 'ant' if wie=='thuis' else 'teg' }}">{{ P.naam }}</span> <span class="muted">({{ wie }})</span></td>
+            {% if d %}
+            <td class="num">{{ d.gespeeld }}</td><td class="num">{{ d.w }}</td><td class="num">{{ d.g }}</td><td class="num">{{ d.v }}</td>
+            <td class="num">{{ d.dp_voor }}</td><td class="num">{{ d.dp_tegen }}</td><td class="num"><strong>{{ d.punten }}</strong></td>
+            <td class="num">{{ (d.punten / d.gespeeld)|round(2) if d.gespeeld else '–' }}</td>
+            {% else %}<td class="num" colspan="8">–</td>{% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+
+      <h3>Doelpunt-types, timing, ranking &amp; selectie</h3>
+      <div class="ts-detail">
+        {% for P in [A, B] %}
+        <div class="ts-kaart" data-rol="{{ P.rol }}">
+          <h4><span class="{{ 'ant' if P.rol=='thuis' else 'teg' }}">{{ P.naam }}</span></h4>
+          {% if P.doelpunten and P.doelpunten.matchen_met_data %}
+            {% set dp = P.doelpunten %}
+            <h5>Gescoord — {{ dp.gescoord.totaal }}</h5>
+            {{ verdeel(dp.gescoord.fases) }}
+            <p class="muted" style="font-size:11.5px;margin:4px 0 0">
+              Voet/kop: {% for k,v in dp.gescoord.lichaam|dictsort(by='value',reverse=true) %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}
+              &nbsp;·&nbsp; binnen zestien {{ dp.gescoord.binnen }} / buiten {{ dp.gescoord.buiten }}</p>
+            <h5>Geïncasseerd — {{ dp.geincasseerd.totaal }}</h5>
+            {{ verdeel(dp.geincasseerd.fases, 'tegen') }}
+            <p class="muted" style="font-size:11.5px;margin:4px 0 0">
+              binnen zestien {{ dp.geincasseerd.binnen }} / buiten {{ dp.geincasseerd.buiten }}</p>
+            <h5>Wanneer vallen de doelpunten</h5>
+            {{ timing(dp) }}
+            <p class="muted" style="font-size:11px">op basis van {{ dp.matchen_met_data }} matchen met schotdata</p>
+          {% else %}
+            <p class="muted" style="font-size:12px">Geen shotmap-data gevonden voor deze ploeg.</p>
+          {% endif %}
+          {% if P.ranking %}
+          <h5>Ranking in {{ tsd.competitie }}</h5>
+          <ul>
+            {% for r in P.ranking %}
+            <li>{{ r.label }} — <strong>{{ r.rank }}<sup>e</sup></strong><span class="muted">{% if tsd.competitie_ploegen %} van {{ tsd.competitie_ploegen }}{% endif %} ({{ r.waarde }})</span></li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% if P.selectie and P.selectie.waarde_totaal_m %}
+          <h5>Selectie (Transfermarkt)</h5>
+          <p style="font-size:12.5px;margin:0">
+            Marktwaarde <strong>€ {{ P.selectie.waarde_totaal_m }} mln</strong>
+            <span class="muted">(Ø € {{ P.selectie.waarde_gem_m }} mln)</span><br>
+            {{ P.selectie.kader }} spelers · Ø {{ P.selectie.leeftijd }} jaar · {{ P.selectie.buitenlanders }} buitenlanders</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <p class="stempel" style="margin-top:12px">Opgehaald: <span class="g">{{ o.tijdstippen.teamstats|dt }}</span></p>
+    </div>
+    {% endif %}
+  </section>
+  </div><!-- /tab teamstats -->
+
   <div class="tab" data-tab="diagnose">
   <section>
     <h2>Diagnose — spelers koppelen</h2>
@@ -987,6 +1231,8 @@
             <strong>Statistieken</strong> door.</li>
         {% if toon_whoscored %}<li>Vul in de spelerscoretabel eventueel de WhoScored-cijfers zelf in
             en klik <strong>Scores bewaren</strong>. Die blijven bewaard.</li>{% endif %}
+        <li>Wil je teamcijfers, klik dan ook <span class="ic">teamstats</span> — dat vult het
+            tabblad <strong>Teamstatistieken</strong> (de eerste keer ~1 minuut, daarna snel).</li>
         <li>In het tabblad <strong>Export</strong>: <strong>Kopieer</strong> de tekst voor de
             podcastnotities, of klik <strong>Bewaren</strong> om de aflevering op te slaan.</li>
       </ul>
@@ -1001,6 +1247,7 @@
         <li><strong>Ververs alles</strong> — Sofascore, Transfermarkt en FotMob opnieuw ophalen.</li>
         <li><strong>sofascore / fotmob / transfermarkt</strong> — enkel die ene bron verversen.</li>
         <li><strong>voorbeschouwing</strong> — de extra tegenstander-info (zie hierboven).</li>
+        <li><strong>teamstats</strong> — vult het tabblad Teamstatistieken (shotmaps per match).</li>
         <li><strong>export .md</strong> — de ruwe tekst in een nieuw tabblad.</li>
         <li><strong>afdrukken / PDF</strong> — opent een propere pagina; kies daar "Opslaan als PDF".</li>
       </ul>
@@ -1083,6 +1330,21 @@
     let start='wedstrijd';
     try{ const s=localStorage.getItem('dvp-tab'); if(s && knoppen.some(b=>b.dataset.tab===s)) start=s; }catch(e){}
     toon(start);
+  })();
+
+  // teamstatistieken: wisselen vergelijken / thuis / uit
+  (function(){
+    const ts=document.getElementById('ts'); if(!ts) return;
+    const knoppen=[...ts.querySelectorAll('.ts-toggle button')];
+    function zet(m){
+      ts.dataset.modus=m;
+      knoppen.forEach(b=>b.classList.toggle('actief', b.dataset.modus===m));
+      try{ localStorage.setItem('dvp-ts-modus', m); }catch(e){}
+    }
+    knoppen.forEach(b=>b.addEventListener('click',()=>zet(b.dataset.modus)));
+    let start='vergelijk';
+    try{ const s=localStorage.getItem('dvp-ts-modus'); if(s) start=s; }catch(e){}
+    zet(start);
   })();
 
   // praatpunten: open/dicht onthouden (standaard dicht)
