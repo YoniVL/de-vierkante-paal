@@ -24,6 +24,19 @@
   button.rood{background:var(--rood);color:#12151a;border:0;font-weight:700}
   form.inline{display:inline}
   .huidig{color:var(--goed);font-weight:700}
+  a.knop-link{text-decoration:none;display:inline-block}
+  @media (max-width:640px){
+    main{padding:24px 16px 60px}
+    .kaart{padding:15px 15px}
+    /* naam bovenaan, knoppen daaronder in een wrappende rij */
+    .rij{flex-direction:column;align-items:stretch;gap:10px}
+    .rij > span:last-child{display:flex;flex-wrap:wrap;gap:8px}
+    .rij form.inline{display:block;flex:1 1 8em}
+    .rij form.inline button{width:100%}
+    button{padding:11px 12px;font-size:14px}
+    a.knop-link{display:block;text-align:center;padding:12px;
+      background:var(--rood);color:#12151a;font-weight:700;border-radius:8px}
+  }
 </style>
 </head>
 <body>
@@ -36,7 +49,7 @@
     <div class="rij">
       <span><span class="huidig">{{ actieve_ploeg.naam }}</span>
         <span class="meta">{{ actieve_ploeg.competitie.naam }}</span></span>
-      <a class="rood" href="/kies-ploeg" style="text-decoration:none;display:inline-block">Andere ploeg kiezen</a>
+      <a class="rood knop-link" href="/kies-ploeg">Andere ploeg kiezen</a>
     </div>
     <p class="meta" style="margin:8px 0 0">Snel wisselen kan ook via de knop met de ploegnaam bovenaan de tool.</p>
   </div>
