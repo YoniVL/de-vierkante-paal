@@ -4,20 +4,46 @@ plugins {
     id("com.chaquo.python")
 }
 
+// Ondertekening: één vaste sleutel zodat updates over een oudere versie
+// heen installeren. Ontbreekt de keystore, dan valt de release-build terug
+// op de debug-sleutel (dan moet je bij een update wel eerst deïnstalleren).
+val keystoreFile = rootProject.file("keystore/dvp-release.jks")
+
 android {
     namespace = "be.devierkantepaal.tool"
     compileSdk = 34
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "be.devierkantepaal.tool"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "0.1"
         ndk {
-            // x86_64 = emulator, arm64-v8a = echte toestellen
             abiFilters += listOf("x86_64", "arm64-v8a")
+        }
+    }
+
+    flavorDimensions += "merk"
+    productFlavors {
+        create("dvp") {
+            dimension = "merk"
+            applicationId = "be.devierkantepaal.tool"
+        }
+        create("aftrap") {
+            dimension = "merk"
+            applicationId = "be.aftrap.tool"
+        }
+    }
+
+    signingConfigs {
+        if (keystoreFile.exists()) {
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = "dvptool"
+                keyAlias = "dvp"
+                keyPassword = "dvptool"
+            }
         }
     }
 
@@ -27,6 +53,8 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 
@@ -58,6 +86,9 @@ chaquopy {
         getByName("main") {
             srcDir("src/main/python")
             srcDir(layout.buildDirectory.dir("generated/python"))
+        }
+        getByName("aftrap") {
+            srcDir("src/aftrap/python")   // merk.json
         }
     }
 }

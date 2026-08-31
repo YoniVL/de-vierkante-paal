@@ -251,6 +251,11 @@ installer/                installatieprogramma om te delen met redactieleden
   assets/aftrap-logo.png  logo voor de generieke variant ("Aftrap")
   mac/bouw-mac.py         maakt de Mac-.zip (op Windows) — -Variant / --variant
   mac/LEESMIJ-mac.txt     korte uitleg voor de Mac-gebruikers
+  android/                Android-app (Chaquopy): draait dezelfde dvp.app in een
+                          WebView; Sofascore/FotMob/Transfermarkt via java.net
+    bouw-apk.ps1          maakt "De Vierkante Paal.apk" + "Aftrap.apk"
+                          (nodig: Android SDK + JDK 17 + Python 3.12)
+    app/build.gradle.kts  flavors dvp/aftrap, ondertekening, Chaquopy-config
 dvp/                      de tool
   config.py               instellingen om aan te passen
   launch.py               onzichtbare starter (server + browser)

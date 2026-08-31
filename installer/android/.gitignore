@@ -1,11 +1,16 @@
-# Android / Gradle
+# Android / Gradle build-uitvoer
 .gradle/
 build/
 app/build/
 local.properties
-*.apk
 captures/
 .cxx/
 
 # door de kopieer-taak gevuld vanuit ../../dvp
 app/src/main/python/dvp/
+
+# APK's horen niet in git (worden gebouwd)
+*.apk
+
+# de release-keystore WEL committen (interne sideload-app, geen Play Store):
+# !keystore/dvp-release.jks

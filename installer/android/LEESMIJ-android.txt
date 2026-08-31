@@ -1,0 +1,40 @@
+De Vierkante Paal / Aftrap - Android-app
+========================================
+
+INSTALLEREN
+-----------
+1. Zet het .apk-bestand op je telefoon (via een kabel, Google Drive, of
+   mail naar jezelf).
+2. Tik het bestand aan in je Bestanden-app.
+3. Android vraagt of deze bron apps mag installeren -> toestaan (dit is
+   eenmalig, je kan het daarna terug uitzetten in de instellingen).
+4. Play Protect waarschuwt mogelijk een keer ("app van onbekende maker")
+   -> "Toch installeren".
+
+EERSTE START
+------------
+Bij de allereerste keer is de database leeg, dus de app haalt automatisch
+alle data op (ca. 20 seconden - je ziet de voortgang). Daarna staat alles er.
+
+GEBRUIK
+-------
+- Trek de pagina naar beneden om alles te verversen (of tik "Ververs alles").
+- Bovenaan kies je met de lijst welk onderdeel je bekijkt.
+- De teamstatistieken haal je apart op via de knop "teamstats" (kan de
+  eerste keer ~1 minuut duren).
+
+De app draait een kleine webserver op je toestel; er gaat niets naar buiten
+behalve de gewone verzoeken naar Sofascore, FotMob en Transfermarkt.
+
+Sluit je de app af, dan stopt de tool. Bij het heropenen start ze opnieuw
+(je bewaarde gegevens blijven).
+
+VEREIST
+-------
+Android 8 (Oreo) of nieuwer.
+Internet om de sportdata op te halen.
+
+DVP EN AFTRAP NAAST ELKAAR
+-------------------------
+De twee apps hebben een verschillende pakketnaam en poort (8756 / 8757),
+dus je kan ze allebei installeren en tegelijk gebruiken.

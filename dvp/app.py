@@ -652,7 +652,7 @@ def main(open_browser: bool = False) -> None:
             webbrowser.open(f"http://{config.HOST}:{config.PORT}")
         return
     url = f"http://{config.HOST}:{config.PORT}"
-    print(f"De Vierkante Paal — voorbereidingstool draait op {url}")
+    print(f"{merk.app_naam()} — voorbereidingstool draait op {url}")
     threading.Thread(target=_auto_afsluiter, args=(srv,), daemon=True).start()
     if open_browser:
         try:
