@@ -3,7 +3,9 @@ package be.devierkantepaal.tool
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
+import android.view.KeyEvent
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.TextView
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
@@ -11,6 +13,8 @@ import java.net.Socket
 import kotlin.concurrent.thread
 
 class MainActivity : Activity() {
+
+    private var web: WebView? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,8 +31,6 @@ class MainActivity : Activity() {
             Python.start(AndroidPlatform(this))
         }
         val py = Python.getInstance()
-
-        // De Python-server starten; die geeft de poort terug.
         val port = py.getModule("android_start")
             .callAttr("start", filesDir.absolutePath)
             .toInt()
@@ -46,16 +48,30 @@ class MainActivity : Activity() {
             }
             runOnUiThread {
                 if (!op) {
-                    wachtscherm.text = "De server is niet opgestart. Zie logcat (tag: python.stderr)."
+                    wachtscherm.text =
+                        "De server is niet opgestart. Zie logcat (tag: python.stderr)."
                     return@runOnUiThread
                 }
-                val web = WebView(this)
-                web.settings.javaScriptEnabled = true
-                web.settings.domStorageEnabled = true
-                web.settings.databaseEnabled = true
-                setContentView(web)
-                web.loadUrl("http://127.0.0.1:$port/")
+                val w = WebView(this)
+                web = w
+                w.settings.javaScriptEnabled = true
+                w.settings.domStorageEnabled = true
+                w.settings.databaseEnabled = true
+                // Zonder eigen WebViewClient geeft de WebView elke navigatie
+                // (ook location.reload()) door aan het systeem -> externe browser.
+                w.webViewClient = WebViewClient()
+                setContentView(w)
+                w.loadUrl("http://127.0.0.1:$port/")
             }
         }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        val w = web
+        if (keyCode == KeyEvent.KEYCODE_BACK && w != null && w.canGoBack()) {
+            w.goBack()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 }

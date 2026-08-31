@@ -17,3 +17,6 @@ installer/uit/
 # OS
 .DS_Store
 Thumbs.db
+
+# gebouwde APKs horen niet in git
+*.apk
