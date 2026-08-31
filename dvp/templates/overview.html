@@ -314,31 +314,94 @@
   @keyframes draai{to{transform:rotate(360deg)}}
   #ververs-knoppen.bezig button[data-bron]{opacity:.5;pointer-events:none}
 
+  /* pull-to-verversen */
+  #ptr{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;
+       justify-content:center;height:50px;background:var(--vlak-2);color:var(--rood);
+       font-weight:700;font-size:13px;transform:translateY(-50px);opacity:0;
+       transition:opacity .15s;pointer-events:none;border-bottom:1px solid var(--lijn)}
+
+  /* mobiele bronstatus + per-bron-verversen (inklapbaar) */
+  details.inklap{margin-top:9px}
+  details.inklap>summary{cursor:pointer;color:var(--grijs);font-size:12.5px;font-weight:700;
+       list-style:none;padding:4px 0}
+  details.inklap>summary::-webkit-details-marker{display:none}
+  details.inklap>summary::before{content:"▸ ";color:var(--rood)}
+  details.inklap[open]>summary::before{content:"▾ "}
+  details.inklap .stempel,details.inklap .bar{margin-top:7px}
+
+  /* sorteerkeuze boven kaart-tabellen (alleen mobiel zichtbaar) */
+  .kt-sorteer{display:none}
+
   /* smalle schermen (telefoon) */
-  @media (max-width: 560px){
-    main{padding:12px}
-    section{padding:14px 13px}
-    header .inner{padding:10px 13px;gap:8px}
+  @media (max-width: 640px){
+    body{font-size:15px}
+    main{padding:10px}
+    section{padding:14px 12px;margin-bottom:12px}
+    header .inner{padding:10px 12px;gap:8px}
+    header .logo{width:30px;height:30px}
     header h1{font-size:14px}
-    header .nu{font-size:11px;width:100%;margin-left:0}
-    header .pk-paneel{min-width:0;width:calc(100vw - 26px);left:0}
-    .pitch{min-height:360px;padding:12px 2px}
-    .pitch::after{width:60px;height:60px}
-    .pp{width:19%}
-    .pp .num{width:28px;height:28px;font-size:12px}
-    .pp .nm{font-size:9.5px}
-    .verloop, .verloop-kop{font-size:12px;gap:1px 5px}
-    .verloop .m{font-size:10.5px}
+    header .nu{font-size:11.5px;width:100%;margin-left:0;order:9}
+    header .pk-paneel{min-width:0;width:calc(100vw - 24px);left:0}
+    h2{font-size:12px} h3{font-size:12px;margin-top:16px}
+
+    .btn{padding:11px 16px;font-size:15px}
+    .btn.klein{padding:9px 13px;font-size:13.5px}
+    #ververs-knoppen .btn[data-bron=all]{width:100%}
+
+    /* tabbladen: één veegbare rij i.p.v. wikkelen */
+    .tabs{flex-wrap:nowrap;overflow-x:auto;gap:6px;margin:2px -10px 14px;padding:0 10px 5px;
+          -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+    .tabs::-webkit-scrollbar{display:none}
+    .tabs button{flex:0 0 auto;padding:9px 14px;font-size:12.5px;scroll-snap-align:start}
+
+    .pitch{min-height:340px;padding:12px 2px}
+    .pitch::after{width:56px;height:56px}
+    .pp{width:19.5%}
+    .pp .num{width:30px;height:30px;font-size:12.5px}
+    .pp .nm{font-size:10px}
+    .verloop, .verloop-kop{font-size:12.5px;gap:1px 6px}
+    .verloop .m{font-size:11px}
     .drie{gap:10px}
-    h2{font-size:12px} h3{font-size:11px}
-    .score-hero{gap:10px;padding:12px} .score-hero .team{min-width:90px;font-size:14px}
+    .score-hero{gap:8px;padding:12px}
+    .score-hero .team{min-width:0;font-size:14px}
     .score-hero .cijfer{font-size:24px}
-    .stempel{font-size:11px}
-    .tabs{gap:4px} .tabs button{padding:6px 9px;font-size:12px}
+    .stempel{font-size:11.5px}
+
+    /* --- brede tabellen -> kaartjes per rij --- */
+    table.kt{font-size:14px}
+    table.kt thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+    table.kt, table.kt tbody{display:block}
+    table.kt tr{display:block;border:1px solid var(--lijn);border-radius:9px;background:var(--vlak-2);
+         padding:8px 12px;margin-bottom:8px}
+    table.kt tbody tr:nth-child(even){background:var(--vlak-2)}
+    table.kt td{display:flex;justify-content:space-between;gap:14px;align-items:baseline;
+         padding:4px 0;border:0;text-align:right;white-space:normal}
+    table.kt td::before{content:attr(data-label);color:var(--grijs);font-weight:600;text-align:left;
+         text-transform:none;letter-spacing:0;font-size:12.5px;flex:0 0 auto}
+    table.kt td:first-child{justify-content:flex-start;font-weight:700;font-size:15px;
+         padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--lijn);box-shadow:none}
+    table.kt td:first-child::before{content:none}
+    table.kt td:empty{display:none}
+    table.kt tr.pos-ant{border-color:var(--ant)} table.kt tr.pos-ant td{font-weight:inherit}
+    table.kt tr.pos-teg{border-color:var(--teg)} table.kt tr.pos-teg td{font-weight:inherit}
+
+    .kt-sorteer{display:flex;gap:8px;align-items:center;margin:2px 0 10px;font-size:13px}
+    .kt-sorteer select{flex:1;padding:9px;border-radius:7px;background:#0e1014;color:var(--inkt);
+         border:1px solid var(--lijn);font:inherit}
+
+    /* klassement: minder kolommen + compacter zodat het past */
+    table.klassement-c th.wegmob, table.klassement-c td.wegmob{display:none}
+    table.klassement-c{font-size:13px}
+    table.klassement-c td, table.klassement-c th{padding:6px 4px}
+    table.klassement-c .klas-team{max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    .ts-toggle{flex-wrap:wrap}
+    .conn,.drie{grid-template-columns:1fr}
   }
 </style>
 </head>
 <body>
+{% if mobiel %}<div id="ptr">↓ Trek om te verversen</div>{% endif %}
 
 {% macro pitch(zijde, titel, kant='') -%}
   <div>
@@ -438,35 +501,53 @@
   {% endif %}
 
   <section>
-    <div class="bar" id="ververs-knoppen">
-      <button class="btn" data-bron="all">↻ Ververs alles</button>
-      {% for b in ["sofascore","fotmob","transfermarkt","voorbeschouwing","teamstats"] %}
-      <button class="btn grijs klein" data-bron="{{ b }}">{{ b }}</button>
-      {% endfor %}
-      <a class="btn grijs klein" href="/export.md" target="_blank">export .md</a>
-      <a class="btn grijs klein" href="/print" target="_blank" rel="noopener"
-         title="Opent een afdrukvriendelijke pagina; kies daar 'Opslaan als PDF' als bestemming">🖨 afdrukken / PDF</a>
-    </div>
-
     <div id="ververs-status" class="ververs-status" hidden>
       <span class="spinner"></span>
       <span id="ververs-tekst">Verversen…</span>
     </div>
 
-    <div class="stempel">
-      {%- set _st = o.bron_status or {} -%}
-      {%- set _iconen = {'ok':'✓','verouderd':'⏱','leeg':'–','fout':'✕'} -%}
-      {%- for sleutel, label in [('sofascore','Sofascore'),('fotmob','FotMob'),('transfermarkt','Transfermarkt'),('voorbeschouwing','Voorbeschouwing'),('teamstats','Teamstats')] %}
-        {%- set s = _st.get(sleutel, 'leeg') -%}
-        <span class="bs bs-{{ s }}" title="{{ {'ok':'up-to-date','verouderd':'ouder dan 8u — ververs','leeg':'nog niet opgehaald','fout':'ophalen mislukt of geen bruikbare data'}[s] }}">{{ _iconen[s] }} {{ label }}</span>
-        <span class="g">{{ o.tijdstippen[sleutel]|dt }}</span>{% if not loop.last %} · {% endif %}
-      {%- endfor %}
-      {% if versie %}&nbsp;·&nbsp;versie {{ versie }}{% endif %}
+    <div class="bar" id="ververs-knoppen">
+      <button class="btn" data-bron="all">↻ Ververs alles</button>
+      {% if mobiel %}
+      <details class="inklap" style="width:100%">
+        <summary>per bron verversen</summary>
+        <div class="bar">
+          {% for b in ["sofascore","fotmob","transfermarkt","voorbeschouwing","teamstats"] %}
+          <button class="btn grijs klein" data-bron="{{ b }}">{{ b }}</button>
+          {% endfor %}
+        </div>
+      </details>
+      {% else %}
+      {% for b in ["sofascore","fotmob","transfermarkt","voorbeschouwing","teamstats"] %}
+      <button class="btn grijs klein" data-bron="{{ b }}">{{ b }}</button>
+      {% endfor %}
+      {% endif %}
     </div>
+
+    {%- set _st = o.bron_status or {} -%}
+    {%- set _iconen = {'ok':'✓','verouderd':'⏱','leeg':'–','fout':'✕'} -%}
+    {%- set _titels = {'ok':'up-to-date','verouderd':'ouder dan 8u — ververs','leeg':'nog niet opgehaald','fout':'ophalen mislukt of geen bruikbare data'} -%}
+    {%- set n_ok = _st.values()|select('equalto','ok')|list|length -%}
+    {% if mobiel %}
+    <details class="inklap">
+      <summary>Bronnen: {{ n_ok }}/5 bijgewerkt{% if o.tijdstippen.sofascore %} <span class="g">· {{ o.tijdstippen.sofascore|dt }}</span>{% endif %}</summary>
+    {% endif %}
+      <div class="stempel">
+        {%- for sleutel, label in [('sofascore','Sofascore'),('fotmob','FotMob'),('transfermarkt','Transfermarkt'),('voorbeschouwing','Voorbeschouwing'),('teamstats','Teamstats')] %}
+          {%- set s = _st.get(sleutel, 'leeg') -%}
+          <span class="bs bs-{{ s }}" title="{{ _titels[s] }}">{{ _iconen[s] }} {{ label }}</span>
+          <span class="g">{{ o.tijdstippen[sleutel]|dt }}</span>{% if not loop.last %} · {% endif %}
+        {%- endfor %}
+        {% if versie %}&nbsp;·&nbsp;versie {{ versie }}{% endif %}
+      </div>
+    {% if mobiel %}</details>{% endif %}
+
+    {% if not mobiel %}
     <div class="afsluit">
       <button type="button" class="btn-af" id="btn-afsluiten">✕ Tool afsluiten</button>
       <label><input type="checkbox" id="chk-blijf"> op de achtergrond laten draaien (niet automatisch afsluiten als ik het tabblad sluit)</label>
     </div>
+    {% endif %}
   </section>
 
   {% if o.praatpunten %}
@@ -594,24 +675,35 @@
       <!-- spelerscores: vlak onder het verloop -->
       <h3>Spelerscores vorige wedstrijd</h3>
       {% if o.scoretabel %}
-      {% set gem_kol = 5 if toon_whoscored else 4 %}
+      {% set gem_kol = 5 if toon_ws else 4 %}
       <div class="bar" style="margin-bottom:10px">
         <span class="muted">Open de match op:</span>
         {% if o.score_links.sofascore %}<a class="btn grijs klein" href="{{ o.score_links.sofascore }}" target="_blank" rel="noopener">Sofascore ↗</a>{% endif %}
         {% if o.score_links.fotmob %}<a class="btn grijs klein" href="{{ o.score_links.fotmob }}" target="_blank" rel="noopener">FotMob ↗</a>{% endif %}
         {% if o.score_links.whoscored %}<a class="btn grijs klein" href="{{ o.score_links.whoscored }}" target="_blank" rel="noopener">WhoScored ↗ <span class="muted">(clubpagina)</span></a>{% endif %}
       </div>
-      <p class="muted">Sofascore en FotMob worden automatisch opgehaald.{% if toon_whoscored %} WhoScored vul je zelf in — die waarden blijven bewaard.{% endif %}
-         Klik een kolomtitel om te sorteren (bv. op <strong>Gemiddelde</strong>).</p>
+      <p class="muted">Sofascore en FotMob worden automatisch opgehaald.{% if toon_ws %} WhoScored vul je zelf in — die waarden blijven bewaard.{% endif %}
+         {% if not mobiel %}Klik een kolomtitel om te sorteren (bv. op <strong>Gemiddelde</strong>).{% endif %}</p>
       <form method="post" action="/ratings">
         <input type="hidden" name="event_id" value="{{ o.event_id or '' }}">
-        <div class="tablescroll"><table id="scoretabel" class="sorteerbaar">
+        {% if mobiel %}
+        <label class="kt-sorteer">Sorteer op:
+          <select onchange="sorteerKaart('scoretabel', this.value)">
+            <option value="0|0">Speler (A-Z)</option>
+            <option value="1|1" selected>Minuten</option>
+            <option value="2|1">Sofascore</option>
+            <option value="3|1">FotMob</option>
+            <option value="{{ gem_kol }}|1">Gemiddelde</option>
+          </select>
+        </label>
+        {% endif %}
+        <div class="tablescroll"><table id="scoretabel" class="sorteerbaar kt">
           <thead><tr>
             <th onclick="sorteerTabel(this,0,false)">Speler</th>
             <th class="num" onclick="sorteerTabel(this,1,true)">Min</th>
             <th class="num" onclick="sorteerTabel(this,2,true)">Sofascore</th>
             <th class="num" onclick="sorteerTabel(this,3,true)">FotMob</th>
-            {% if toon_whoscored %}<th class="num" onclick="sorteerTabel(this,4,true)">WhoScored</th>{% endif %}
+            {% if toon_ws %}<th class="num" onclick="sorteerTabel(this,4,true)">WhoScored</th>{% endif %}
             <th class="num" onclick="sorteerTabel(this,{{ gem_kol }},true)">Gemiddelde</th>
           </tr></thead>
           <tbody>
@@ -620,21 +712,21 @@
             <td data-v="{{ r.speler }}">{% if r.profiel_url %}<a href="{{ r.profiel_url }}" target="_blank">{{ r.speler }}</a>{% else %}{{ r.speler }}{% endif %}
               {% if r.invaller %}<span class="muted">(in)</span>{% endif %}
               {% if r.doelpunten %} ⚽{{ r.doelpunten }}{% endif %}{% if r.assists %} 🅰{{ r.assists }}{% endif %}</td>
-            <td class="num" data-v="{{ r.minuten or 0 }}">{{ r.minuten or '' }}</td>
-            <td class="num" data-v="{{ r.sofascore if r.sofascore is not none else 0 }}">{% if r.sofascore is not none %}
+            <td class="num" data-label="Minuten" data-v="{{ r.minuten or 0 }}">{{ r.minuten or '' }}</td>
+            <td class="num" data-label="Sofascore" data-v="{{ r.sofascore if r.sofascore is not none else 0 }}">{% if r.sofascore is not none %}
               <span class="scorepil {{ 's-hoog' if r.sofascore>=7 else 's-laag' if r.sofascore<6 else 's-mid' }}">{{ '%.1f'|format(r.sofascore) }}</span>
               {% else %}–{% endif %}</td>
-            <td class="num" data-v="{{ r.fotmob if r.fotmob is not none else 0 }}">{% if r.fotmob is not none %}
+            <td class="num" data-label="FotMob" data-v="{{ r.fotmob if r.fotmob is not none else 0 }}">{% if r.fotmob is not none %}
               <span class="scorepil {{ 's-hoog' if r.fotmob>=7 else 's-laag' if r.fotmob<6 else 's-mid' }}">{{ '%.1f'|format(r.fotmob) }}</span>
               {% else %}–{% endif %}</td>
-            {% if toon_whoscored %}<td class="num" data-v="{{ r.whoscored if r.whoscored is not none else 0 }}"><input class="rating" name="whoscored__{{ r.player_key }}"
+            {% if toon_ws %}<td class="num" data-label="WhoScored" data-v="{{ r.whoscored if r.whoscored is not none else 0 }}"><input class="rating" name="whoscored__{{ r.player_key }}"
                 value="{{ '%.2f'|format(r.whoscored) if r.whoscored is not none else '' }}" inputmode="decimal"></td>{% endif %}
-            <td class="num" data-v="{{ r.gemiddelde if r.gemiddelde is not none else 0 }}"><strong>{{ '%.2f'|format(r.gemiddelde) if r.gemiddelde is not none else '–' }}</strong></td>
+            <td class="num" data-label="Gemiddelde" data-v="{{ r.gemiddelde if r.gemiddelde is not none else 0 }}"><strong>{{ '%.2f'|format(r.gemiddelde) if r.gemiddelde is not none else '–' }}</strong></td>
           </tr>
           {% endfor %}
           </tbody>
         </table></div>
-        <p><button class="btn klein">Scores bewaren</button></p>
+        {% if toon_ws %}<p><button class="btn klein">Scores bewaren</button></p>{% endif %}
       </form>
       {% else %}
         <p class="muted">Nog geen opstelling. Ververs Sofascore of FotMob.</p>
@@ -754,38 +846,32 @@
       {% endif %}
 
       {% if vb and vb.klassement %}
+      {% macro klasrij(r) %}
+        <tr class="{{ 'pos-ant' if r.antwerp else 'pos-teg' if r.tegenstander else '' }}">
+          <td class="num">{{ r.positie }}</td><td class="klas-team">{{ r.team }}</td><td class="num">{{ r.gespeeld }}</td>
+          <td class="num">{{ r.gewonnen }}</td><td class="num">{{ r.gelijk }}</td><td class="num">{{ r.verloren }}</td>
+          <td class="num wegmob">{{ r.dp_voor }}</td><td class="num wegmob">{{ r.dp_tegen }}</td><td class="num">{{ r.saldo }}</td>
+          <td class="num"><strong>{{ r.punten }}</strong></td>
+        </tr>
+      {% endmacro %}
+      {% set _klaskop %}<tr><th class="num">#</th><th>Ploeg</th><th class="num">Gesp.</th><th class="num">W</th><th class="num">G</th><th class="num">V</th>
+          <th class="num wegmob">DP+</th><th class="num wegmob">DP−</th><th class="num">+/−</th><th class="num">Ptn</th></tr>{% endset %}
       <h3>Klassement {{ cv.klassement_naam if cv else '' }}</h3>
       {% set ns = namespace(prev=0) %}
-      <div class="tablescroll"><table>
-        <thead><tr><th class="num">#</th><th>Ploeg</th><th class="num">Gesp.</th><th class="num">W</th><th class="num">G</th><th class="num">V</th>
-            <th class="num">DP+</th><th class="num">DP−</th><th class="num">+/−</th><th class="num">Ptn</th></tr></thead>
+      <div class="tablescroll"><table class="klassement-c">
+        <thead>{{ _klaskop }}</thead>
         <tbody>
         {% for r in vb.klassement if r.positie <= 4 or r.antwerp or r.tegenstander %}
           {% if r.positie - ns.prev > 1 %}<tr><td colspan="10" class="muted" style="text-align:center;padding:2px">⋯</td></tr>{% endif %}
-          <tr class="{{ 'pos-ant' if r.antwerp else 'pos-teg' if r.tegenstander else '' }}">
-            <td class="num">{{ r.positie }}</td><td>{{ r.team }}</td><td class="num">{{ r.gespeeld }}</td>
-            <td class="num">{{ r.gewonnen }}</td><td class="num">{{ r.gelijk }}</td><td class="num">{{ r.verloren }}</td>
-            <td class="num">{{ r.dp_voor }}</td><td class="num">{{ r.dp_tegen }}</td><td class="num">{{ r.saldo }}</td>
-            <td class="num"><strong>{{ r.punten }}</strong></td>
-          </tr>
+          {{ klasrij(r) }}
           {% set ns.prev = r.positie %}
         {% endfor %}
         </tbody>
       </table></div>
       <details class="blok"><summary>volledig klassement</summary>
-      <div class="tablescroll" style="margin-top:6px"><table>
-        <thead><tr><th class="num">#</th><th>Ploeg</th><th class="num">Gesp.</th><th class="num">W</th><th class="num">G</th><th class="num">V</th>
-            <th class="num">DP+</th><th class="num">DP−</th><th class="num">+/−</th><th class="num">Ptn</th></tr></thead>
-        <tbody>
-        {% for r in vb.klassement %}
-          <tr class="{{ 'pos-ant' if r.antwerp else 'pos-teg' if r.tegenstander else '' }}">
-            <td class="num">{{ r.positie }}</td><td>{{ r.team }}</td><td class="num">{{ r.gespeeld }}</td>
-            <td class="num">{{ r.gewonnen }}</td><td class="num">{{ r.gelijk }}</td><td class="num">{{ r.verloren }}</td>
-            <td class="num">{{ r.dp_voor }}</td><td class="num">{{ r.dp_tegen }}</td><td class="num">{{ r.saldo }}</td>
-            <td class="num"><strong>{{ r.punten }}</strong></td>
-          </tr>
-        {% endfor %}
-        </tbody>
+      <div class="tablescroll" style="margin-top:6px"><table class="klassement-c">
+        <thead>{{ _klaskop }}</thead>
+        <tbody>{% for r in vb.klassement %}{{ klasrij(r) }}{% endfor %}</tbody>
       </table></div>
       </details>
       {% endif %}
@@ -798,7 +884,7 @@
           <h4>{{ titel }}</h4>
           <ol>
             {% for s in vb.tegenstander_sterkhouders[kat] %}
-              <li>{{ s.naam }} — <strong>{{ s.waarde }}</strong>
+              <li>{{ s.naam }} — <strong>{{ s.waarde|round(2) if s.waarde is number else s.waarde }}</strong>
                   <span class="muted">({{ s.wedstrijden or '?' }} w)</span></li>
             {% else %}<li class="muted">–</li>{% endfor %}
           </ol>
@@ -827,7 +913,7 @@
           <h4>{{ titel }}</h4>
           <ol style="margin:0;padding-left:18px;font-size:13.5px">
             {% for s in ts[kat] %}
-            <li class="{{ 'is-ant' if s.antwerp }}">{{ s.naam }} — <strong>{{ s.waarde }}</strong>
+            <li class="{{ 'is-ant' if s.antwerp }}">{{ s.naam }} — <strong>{{ s.waarde|round(2) if s.waarde is number else s.waarde }}</strong>
                 <span class="muted">({{ s.wedstrijden or '?' }} w)</span></li>
             {% endfor %}
           </ol>
@@ -899,9 +985,22 @@
     <p class="muted">
       Wedstrijden/goals/assists/kaarten/minuten: <a href="{{ o.transfermarkt.bron_url }}" target="_blank">Transfermarkt</a> (alle competities).
       {% if o.sofascore.seizoen_ratings %}Gem. rating: Sofascore ({{ o.sofascore.seizoen_ratings.competitie }}).{% endif %}
-      Klik een kolomtitel om te sorteren. Tussen haakjes: verschil sinds de vorige verversing.
+      {% if not mobiel %}Klik een kolomtitel om te sorteren. {% endif %}Tussen haakjes: verschil sinds de vorige verversing.
     </p>
-    <div class="tablescroll"><table id="stattabel" class="sorteerbaar">
+    {% if mobiel %}
+    <label class="kt-sorteer">Sorteer op:
+      <select onchange="sorteerKaart('stattabel', this.value)">
+        <option value="0|0">Speler (A-Z)</option>
+        <option value="1|1">Gem. rating</option>
+        <option value="2|1">Wedstrijden</option>
+        <option value="3|1">Goals</option>
+        <option value="4|1">Assists</option>
+        <option value="7|1" selected>Minuten</option>
+      </select>
+    </label>
+    {% endif %}
+    {% set _statkol = ['Wedstrijden','Goals','Assists','Geel','Rood','Minuten'] %}
+    <div class="tablescroll"><table id="stattabel" class="sorteerbaar kt">
       <thead><tr>
         <th onclick="sorteerTabel(this,0,false)">Speler</th>
         <th class="num" onclick="sorteerTabel(this,1,true)">Gem. rating</th>
@@ -920,12 +1019,12 @@
           {% if r.geschorst %}<span class="badge schors" title="{{ r.geschorst.reden }}">geschorst</span>{% endif %}
           {% if r.geblesseerd %}<span class="badge bless" title="{{ r.geblesseerd.reden }}">geblesseerd</span>{% endif %}
         </td>
-        <td class="num" data-v="{{ r.gem_rating if r.gem_rating is not none else 0 }}">
+        <td class="num" data-label="Gem. rating" data-v="{{ r.gem_rating if r.gem_rating is not none else 0 }}">
           {% if r.gem_rating is not none %}
             <span class="scorepil {{ 's-hoog' if r.gem_rating>=7 else 's-laag' if r.gem_rating<6 else 's-mid' }}">{{ '%.2f'|format(r.gem_rating) }}</span>
           {% else %}–{% endif %}</td>
         {% for veld, d in [("wedstrijden", r.d_wedstrijden), ("goals", r.d_goals), ("assists", r.d_assists), ("geel", r.d_geel), ("rood", r.d_rood), ("minuten", r.d_minuten)] %}
-        <td class="num" data-v="{{ r[veld] }}">{{ r[veld] }}{% if d %}<span class="{{ 'delta-pos' if d>0 else 'delta-neg' }}">{{ ' (+%d)'|format(d) if d>0 else ' (%d)'|format(d) }}</span>{% endif %}</td>
+        <td class="num" data-label="{{ _statkol[loop.index0] }}" data-v="{{ r[veld] }}">{{ r[veld] }}{% if d %}<span class="{{ 'delta-pos' if d>0 else 'delta-neg' }}">{{ ' (+%d)'|format(d) if d>0 else ' (%d)'|format(d) }}</span>{% endif %}</td>
         {% endfor %}
       </tr>
       {% endfor %}
@@ -1155,7 +1254,7 @@
       </div>
 
       <h3>Thuis vs uit <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">— de helft die voor deze match telt</span></h3>
-      <div class="tablescroll"><table>
+      <div class="tablescroll"><table class="kt">
         <thead><tr><th>Ploeg</th><th class="num">Gesp.</th><th class="num">W</th><th class="num">G</th><th class="num">V</th>
           <th class="num">DP+</th><th class="num">DP−</th><th class="num">Ptn</th><th class="num">Ptn/match</th></tr></thead>
         <tbody>
@@ -1164,10 +1263,10 @@
           <tr>
             <td><span class="{{ 'ant' if wie=='thuis' else 'teg' }}">{{ P.naam }}</span> <span class="muted">({{ wie }})</span></td>
             {% if d %}
-            <td class="num">{{ d.gespeeld }}</td><td class="num">{{ d.w }}</td><td class="num">{{ d.g }}</td><td class="num">{{ d.v }}</td>
-            <td class="num">{{ d.dp_voor }}</td><td class="num">{{ d.dp_tegen }}</td><td class="num"><strong>{{ d.punten }}</strong></td>
-            <td class="num">{{ (d.punten / d.gespeeld)|round(2) if d.gespeeld else '–' }}</td>
-            {% else %}<td class="num" colspan="8">–</td>{% endif %}
+            <td class="num" data-label="Gespeeld">{{ d.gespeeld }}</td><td class="num" data-label="Winst">{{ d.w }}</td><td class="num" data-label="Gelijk">{{ d.g }}</td><td class="num" data-label="Verlies">{{ d.v }}</td>
+            <td class="num" data-label="DP voor">{{ d.dp_voor }}</td><td class="num" data-label="DP tegen">{{ d.dp_tegen }}</td><td class="num" data-label="Punten"><strong>{{ d.punten }}</strong></td>
+            <td class="num" data-label="Ptn/match">{{ (d.punten / d.gespeeld)|round(2) if d.gespeeld else '–' }}</td>
+            {% else %}<td class="num" data-label="" colspan="8">–</td>{% endif %}
           </tr>
           {% endfor %}
         </tbody>
@@ -1315,6 +1414,12 @@
       <p><button class="btn klein" type="button" onclick="kopieer()">Kopieer</button>
          <span id="kopie-ok" class="muted"></span></p>
       <textarea id="md" readonly>{{ markdown }}</textarea>
+      {% if not mobiel %}
+      <p style="margin-top:8px">
+        <a class="btn grijs klein" href="/export.md" target="_blank">.md openen</a>
+        <a class="btn grijs klein" href="/print" target="_blank" rel="noopener">🖨 Afdrukvriendelijke versie / PDF</a>
+      </p>
+      {% endif %}
     </details>
 
     <h3>Bewaar als aflevering</h3>
@@ -1363,7 +1468,7 @@
             Zit apart omdat het ~10 Transfermarkt-pagina's ophaalt; blijft 24u geldig.</li>
         <li>Loop de tabbladen <strong>Vorige wedstrijd</strong>, <strong>Voorbeschouwing</strong> en
             <strong>Statistieken</strong> door.</li>
-        {% if toon_whoscored %}<li>Vul in de spelerscoretabel eventueel de WhoScored-cijfers zelf in
+        {% if toon_ws %}<li>Vul in de spelerscoretabel eventueel de WhoScored-cijfers zelf in
             en klik <strong>Scores bewaren</strong>. Die blijven bewaard.</li>{% endif %}
         <li>Wil je teamcijfers, klik dan ook <span class="ic">teamstats</span> — dat vult het
             tabblad <strong>Teamstatistieken</strong> (de eerste keer ~1 minuut, daarna snel).</li>
@@ -1449,6 +1554,18 @@
     rijen.forEach(r=>tb.appendChild(r));
     tabel.dataset.sc=kol; tabel.dataset.sd=richting;
     [...tabel.tHead.rows[0].cells].forEach((c,i)=>c.dataset.arrow = i==kol ? (richting=='asc'?'▲':'▼') : '');
+  }
+  // mobiele sorteerkeuze: waarde = "kolomindex|numeriek(0/1)"
+  function sorteerKaart(tabelId, waarde){
+    const [kol, num] = waarde.split('|').map(Number);
+    const tabel=document.getElementById(tabelId); if(!tabel) return;
+    const tb=tabel.tBodies[0], rijen=[...tb.rows];
+    rijen.sort((a,b)=>{
+      const x=a.cells[kol]?.dataset.v, y=b.cells[kol]?.dataset.v;
+      if(num) return (parseFloat(y)||0)-(parseFloat(x)||0);   // cijfers: hoog eerst
+      return String(x||'').localeCompare(String(y||''));       // namen: A-Z
+    });
+    rijen.forEach(r=>tb.appendChild(r));
   }
 
   // tabs
@@ -1546,6 +1663,7 @@
 
     knoppen.querySelectorAll('button[data-bron]').forEach(b=>
       b.addEventListener('click',()=>start(b.dataset.bron)));
+    window.__ververs = start;   // ook voor pull-to-verversen
 
     if({{ 'true' if verversen_bezig else 'false' }}){
       status.hidden=false; knoppen.classList.add('bezig');
@@ -1556,27 +1674,57 @@
     }
   })();
 
-  // afsluiten + hartslag: sluit automatisch af als geen enkel tabblad meer open is
+  // hartslag (houdt de tool in leven zolang de pagina open is) + afsluitknop
   (function(){
     const chk=document.getElementById('chk-blijf');
-    let blijf={{ 'true' if blijf_draaien else 'false' }};
-    try{ const s=localStorage.getItem('dvp-blijf'); if(s!==null) blijf=(s==='1'); }catch(e){}
-    chk.checked=blijf;
-    function hb(){ fetch('/heartbeat?blijf='+(chk.checked?1:0)).catch(function(){}); }
-    chk.addEventListener('change',function(){
-      try{ localStorage.setItem('dvp-blijf', chk.checked?'1':'0'); }catch(e){}
-      hb();
-    });
-    hb();
-    setInterval(hb, 20000);
+    if(chk){
+      let blijf={{ 'true' if blijf_draaien else 'false' }};
+      try{ const s=localStorage.getItem('dvp-blijf'); if(s!==null) blijf=(s==='1'); }catch(e){}
+      chk.checked=blijf;
+      chk.addEventListener('change',function(){
+        try{ localStorage.setItem('dvp-blijf', chk.checked?'1':'0'); }catch(e){}
+        hb();
+      });
+    }
+    function hb(){ fetch('/heartbeat?blijf='+((chk&&chk.checked)?1:0)).catch(function(){}); }
+    hb(); setInterval(hb, 20000);
     document.addEventListener('visibilitychange',function(){ if(!document.hidden) hb(); });
 
-    document.getElementById('btn-afsluiten').addEventListener('click',function(){
+    const af=document.getElementById('btn-afsluiten');
+    if(af) af.addEventListener('click',function(){
       if(!confirm('De tool nu helemaal afsluiten? Ze draait daarna niet meer op de achtergrond.')) return;
       fetch('/afsluiten',{method:'POST'}).then(function(){
         document.body.innerHTML='<p style="padding:40px;font:16px/1.5 system-ui;color:#e7e9ee">'
           +'De tool is afgesloten. Je mag dit tabblad sluiten.</p>';
       });
+    });
+  })();
+
+  // pull-to-verversen (mobiel)
+  (function(){
+    const ind=document.getElementById('ptr'); if(!ind) return;
+    const DREMPEL=72;
+    let startY=0, dist=0, actief=false;
+    addEventListener('touchstart',function(e){
+      if(window.scrollY<=0 && e.touches.length===1){ startY=e.touches[0].clientY; actief=true; dist=0; }
+    },{passive:true});
+    addEventListener('touchmove',function(e){
+      if(!actief) return;
+      dist=e.touches[0].clientY-startY;
+      if(dist>0 && window.scrollY<=0){
+        const y=Math.min(dist*0.5, DREMPEL+18);
+        ind.style.transform='translateY('+y+'px)';
+        ind.style.opacity=Math.min(1, dist/DREMPEL);
+        ind.textContent = dist>DREMPEL ? '↻ Laat los om te verversen' : '↓ Trek om te verversen';
+      } else { actief=false; }
+    },{passive:true});
+    addEventListener('touchend',function(){
+      if(actief && dist>DREMPEL && window.__ververs){
+        ind.textContent='Verversen…';
+        window.__ververs('all');
+      }
+      ind.style.transform=''; ind.style.opacity='0';
+      actief=false; dist=0;
     });
   })();
 

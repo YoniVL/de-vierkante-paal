@@ -244,12 +244,17 @@ def _afleveringen_map() -> str:
     return str(basis / ploeg.sleutel() if merk.toon_kiezer() else basis)
 
 
-def _render_index() -> bytes:
+_MOBIEL = re.compile(r"Android|iPhone|iPad|iPod|Mobile|Silk", re.IGNORECASE)
+
+
+def _render_index(user_agent: str = "") -> bytes:
     overzicht = aggregate.bouw_overzicht()
     actief = ploeg.actieve()
     lijst = ploeg.lijst()
+    mobiel = bool(_MOBIEL.search(user_agent))
     context = {
         "o": overzicht,
+        "mobiel": mobiel,
         "fouten": store.get_kv("fouten", {}),
         "markdown": export.naar_markdown(overzicht),
         "episodes": store.list_episodes(ploeg.sleutel()),
@@ -259,6 +264,7 @@ def _render_index() -> bytes:
         "app_naam": merk.app_naam(),
         "toon_kiezer": merk.toon_kiezer(),
         "toon_whoscored": merk.toon_whoscored(),
+        "toon_ws": merk.toon_whoscored() and not mobiel,  # WhoScored-invoer: niet op mobiel
         "actieve_ploeg": actief,
         "vastgeprikt": [p for p in lijst if p.get("vast")],
         "recent": [p for p in lijst if not p.get("vast")],
@@ -442,7 +448,7 @@ class Handler(BaseHTTPRequestHandler):
                 if merk.toon_kiezer() and not ploeg.is_gekozen():
                     self._redirect("/kies-ploeg")
                 else:
-                    self._stuur(_render_index())
+                    self._stuur(_render_index(self.headers.get("User-Agent", "")))
             elif pad == "/kies-ploeg":
                 qs = parse_qs(urlparse(self.path).query)
                 vi = None
