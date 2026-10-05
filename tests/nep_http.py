@@ -20,6 +20,8 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 def bestandsnaam(url: str, ext: str) -> str:
+    # Fixtures zijn opgenomen toen de API nog op api.sofascore.com stond.
+    url = url.replace("https://www.sofascore.com/api/", "https://api.sofascore.com/api/")
     schoon = re.sub(r"[^A-Za-z0-9]+", "_", url).strip("_")[:90]
     h = hashlib.sha1(url.encode("utf-8")).hexdigest()[:8]
     return f"{schoon}__{h}.{ext}.gz"

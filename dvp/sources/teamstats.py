@@ -22,7 +22,7 @@ from ..names import normaliseer
 from ..store import get_kv, set_kv
 from . import transfermarkt
 
-SS = "https://api.sofascore.com/api/v1"
+SS = "https://www.sofascore.com/api/v1"
 FM = "https://www.fotmob.com/api/data"
 
 _SHOTMAP_KV = "teamstats_shotmap"   # { "_versie":N, "<match_id>": {"h":,"a":,"sh":[[...]],"az":{}} }

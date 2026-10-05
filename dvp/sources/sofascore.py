@@ -9,7 +9,8 @@ import datetime as _dt
 from .. import config
 from ..http_client import get_json_impersonated as _get
 
-API = "https://api.sofascore.com/api/v1"
+# api.sofascore.com geeft sinds okt 2026 overal 403; de site zelf gebruikt www.sofascore.com/api/v1.
+API = "https://www.sofascore.com/api/v1"
 WEB = "https://www.sofascore.com"
 
 # De actieve ploeg. Wordt bovenaan fetch() gezet op basis van de gekozen ploeg;
@@ -55,7 +56,12 @@ def _is_officieel(e: dict) -> bool:
     return bool((ut.get("category") or {}).get("country"))
 
 
+_laatste_fout: str | None = None
+
+
 def _kies_events() -> tuple[dict | None, dict | None, list[dict]]:
+    global _laatste_fout
+    _laatste_fout = None
     vorige = None
     volgende = None
     alle: list[dict] = []
@@ -65,15 +71,15 @@ def _kies_events() -> tuple[dict | None, dict | None, list[dict]]:
         alle += officieel
         gespeeld = [e for e in officieel if e.get("status", {}).get("type") == "finished"]
         vorige = gespeeld[-1] if gespeeld else (officieel or [None])[-1]
-    except Exception:
-        pass
+    except Exception as exc:
+        _laatste_fout = f"{type(exc).__name__}: {exc}"
     try:
         nxt = _get(f"{API}/team/{TEAM}/events/next/0")
         toekomst = [e for e in nxt.get("events", []) if _is_officieel(e)]
         alle += toekomst
         volgende = toekomst[0] if toekomst else None
-    except Exception:
-        pass
+    except Exception as exc:
+        _laatste_fout = f"{type(exc).__name__}: {exc}"
     return vorige, volgende, alle
 
 
@@ -776,6 +782,8 @@ def fetch(gekozen_event_id: str | None = None, ploeg: dict | None = None) -> dic
     if heeft_uitslag or resultaat.get("volgende") or resultaat.get("recente_matches"):
         resultaat["status"] = "ok"
     else:
-        resultaat["status"] = {"code": "leeg",
-                               "tekst": "Sofascore gaf geen wedstrijden terug voor deze ploeg"}
+        tekst = "Sofascore gaf geen wedstrijden terug voor deze ploeg"
+        if _laatste_fout:
+            tekst += f" ({_laatste_fout})"
+        resultaat["status"] = {"code": "leeg", "tekst": tekst}
     return resultaat
