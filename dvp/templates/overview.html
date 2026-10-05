@@ -1331,7 +1331,8 @@
         <div class="ts-kaart" data-rol="{{ P.rol }}">
           <h4><span class="{{ 'ant' if P.rol=='thuis' else 'teg' }}">{{ P.naam }}</span></h4>
           {% if P.ranking %}
-          <h5>Ranking in {{ P.competitie.naam or tsd.competitie }}{% if P.competitie.ploegen %} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(van {{ P.competitie.ploegen }})</span>{% endif %}</h5>
+          {% set pcomp = P.competitie if P.competitie is mapping else {} %}
+          <h5>Ranking in {{ pcomp.naam or tsd.competitie }}{% if pcomp.ploegen %} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(van {{ pcomp.ploegen }})</span>{% endif %}</h5>
           <ul>
             {% for r in P.ranking %}
             <li>{{ r.label }} — <strong>{{ r.rank }}<sup>e</sup></strong> <span class="muted">({{ r.waarde }})</span>{% if r.markering %}<span class="mk {{ r.markering }}">{{ '▲ sterk' if r.markering=='sterk' else '▼ zwak' }}</span>{% endif %}</li>
