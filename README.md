@@ -73,14 +73,27 @@ wel, want die worden per ploeg uit hun eigen competitiematchen opgebouwd.
 Een lijst per ploeg (eigen ploeg en tegenstander), sorteerbaar en te filteren op positie.
 Elke speler klapt uit tot een profielkaart:
 
-- **Profiel** — land, leeftijd, lengte, voet, marktwaarde, contract en eventuele blessure.
+- **Profiel** — positie met de rollen waarin hij ook speelt, land, leeftijd, lengte, voet,
+  marktwaarde, contract en eventuele blessure. De positie komt uit FotMob's rangorde van
+  rollen (de eerste is de hoofdrol, bv. rechtse wingback), met Sofascore's gedetailleerde
+  positie en grove letter als terugval — Sofascore's letter alleen is vaak achterhaald.
 - **Radar** — Sofascore's vaardigheden (aanvallen, technisch, tactisch, verdedigen,
   creativiteit; voor keepers reddingen, anticipatie, opbouw, lucht, tactisch) naast het
   gemiddelde van zijn positie.
 - **Seizoenscijfers** per positie (xG, xA, sleutelpassen, duels, tackles, afstand, …),
   met per-90-waarden — Sofascore.
-- **Vergelijking met de competitie** — FotMob-percentielen (hoe hoog scoort hij t.o.v. de
-  andere spelers in de competitie).
+- **Vergelijking met de competitie** — standaard FotMob-percentielen (hoe hoog scoort hij
+  t.o.v. de andere spelers in de competitie; FotMob kiest zelf de vergelijkingsgroep). Met
+  de knoppen erboven kies je zelf: **t.o.v. aanvallers / middenvelders / verdedigers / alle
+  veldspelers** (keepers: enkel keepers). Die percentielen rekent de tool zelf uit de
+  Sofascore-cijfers van de hele competitie (spelers met minstens 270 minuten, per 90
+  minuten) — handig voor een speler die op meerdere posities speelt. Je keuze geldt voor
+  alle spelerskaarten en wordt onthouden.
+
+De **positie** van een speler kan je per kaart aanpassen (keuzelijst "Positie aanpassen",
+bv. *flankaanvaller*); dat wordt bewaard en bepaalt het positiefilter. Standaardwaarden
+voor spelers die de bronnen verkeerd indelen staan in `SPELER_ROLLEN` in `dvp/config.py`.
+Sorteren op naam gebeurt op achternaam.
 
 Zit achter de aparte knop **spelers** (~1 min de eerste keer, daarna een halve dag gecacht).
 FotMob-spelers worden via de naam aan de Sofascore-selectie gekoppeld; wie te weinig

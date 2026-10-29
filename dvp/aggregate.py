@@ -7,6 +7,7 @@ import urllib.parse
 
 from . import config, merk, ploeg, store
 from .names import NaamKoppelaar, normaliseer
+from .sources import spelers as _spelers_bron
 
 
 def _gemiddelde(waarden: list[float]) -> float | None:
@@ -374,7 +375,7 @@ def bouw_overzicht() -> dict:
     fotmob = store.get_kv("bron:fotmob", {})
     voorbeschouwing_extra = store.get_kv("bron:voorbeschouwing", {})
     teamstats = store.get_kv("bron:teamstats", {})
-    spelers = store.get_kv("bron:spelers", {})
+    spelers = _spelers_bron.pas_rollen_toe(store.get_kv("bron:spelers", {}), _spelers_bron.rol_overrides())
 
     event_id = (sofascore.get("vorige") or {}).get("event_id")
     scoretabel = bouw_scoretabel(sofascore, fotmob, event_id)

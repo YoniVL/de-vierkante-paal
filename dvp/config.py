@@ -105,3 +105,10 @@ def huidig_seizoen_jaar(vandaag: _dt.date | None = None) -> int:
 SPELER_ALIASSEN: dict[str, str] = {
     # "vincent janssen": "v janssen",
 }
+
+# Standaardrol voor spelers die de bronnen verkeerd indelen: {Sofascore-spelerid: rolcode}
+# (codes: zie ROL_OPTIES in dvp/sources/spelers.py, bv. "WF" = flankaanvaller). In de app kan
+# je dit per speler overschrijven.
+SPELER_ROLLEN: dict[int, str] = {
+    1920581: "WF",   # Farouck Adekami
+}

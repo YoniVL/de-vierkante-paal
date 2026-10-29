@@ -325,6 +325,16 @@
   .sp-st span:first-child{color:var(--grijs)}
   .sp-st b{font-variant-numeric:tabular-nums;font-weight:700}
   .sp-st em{font-style:normal;color:var(--grijs);font-weight:400;font-size:11px;margin-left:5px}
+  .sp-rolform{margin-left:auto;font-size:12px}
+  .sp-rolform select{background:var(--vlak);color:var(--inkt);border:1px solid var(--lijn);border-radius:6px;
+       padding:3px 6px;font:inherit;font-size:12px;margin-left:4px}
+  .sp-vgl{margin-top:14px}
+  .sp-vgl > h5{margin:0 0 6px;font-size:11px;color:var(--rood);text-transform:uppercase;letter-spacing:.04em}
+  .sp-vgl-knoppen{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+  .sp-vgl-knoppen button{background:var(--vlak);border:1px solid var(--lijn);color:var(--grijs);border-radius:7px;
+       padding:4px 9px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+  .sp-vgl-knoppen button.actief{background:var(--inkt);color:var(--bg);border-color:var(--inkt)}
+  .sp-vgl .uitleg{font-size:11.5px;color:var(--grijs);margin:0 0 8px}
   .sp-fm{margin-top:14px}
   .sp-fm > h5{margin-bottom:2px}
   .sp-fm .uitleg{font-size:11.5px;color:var(--grijs);margin:0 0 8px}
@@ -1449,7 +1459,7 @@
     {%- macro sp_rij(x) -%}
     <div class="sp-rij">
       <span class="sp-nr">{{ x.nummer or '' }}</span>
-      <span class="sp-naam">{{ x.naam }}<span class="sp-pos {{ x.pos }}" title="{{ x.pos_nl }}{% if x.pos_detail %} ({{ x.pos_detail }}){% endif %}">{{ {'G':'K','D':'V','M':'M','F':'A'}.get(x.pos, '?') }}</span>{% if x.blessure %}<span class="sp-bl" title="{{ x.blessure }}">✚</span>{% endif %}</span>
+      <span class="sp-naam">{{ x.naam }}<span class="sp-pos {{ x.pos }}" title="{{ x.rol or x.pos_nl }}">{{ {'G':'K','D':'V','M':'M','F':'A'}.get(x.pos, '?') }}</span>{% if x.blessure %}<span class="sp-bl" title="{{ x.blessure }}">✚</span>{% endif %}</span>
       {% if x.apps %}
       {%- set rc = 's-hoog' if (x.rating and x.rating >= 7.0) else 's-laag' if (x.rating and x.rating < 6.5) else 's-mid' -%}
       <span class="num c-wed">{{ x.apps }}</span>
@@ -1509,7 +1519,7 @@
         <div class="sp-lijst">
         {% for x in pl.spelers %}
           {% if x.apps %}
-          <details class="sp-speler" data-pos="{{ x.pos }}" data-apps="{{ x.apps }}" data-naam="{{ x.naam }}"
+          <details class="sp-speler" id="sp-{{ x.id }}" data-pos="{{ x.pos }}" data-apps="{{ x.apps }}" data-naam="{{ x.sorteer or x.naam }}"
                    data-min="{{ x.minuten }}" data-rating="{{ x.rating if x.rating is not none else '' }}"
                    data-goals="{{ x.goals }}" data-assists="{{ x.assists }}"
                    data-xg="{{ x.xg if x.xg is not none else '' }}" data-xa="{{ x.xa if x.xa is not none else '' }}"
@@ -1518,6 +1528,7 @@
             <summary>{{ sp_rij(x) }}</summary>
             <div class="sp-detail">
               <div class="sp-profiel">
+                <span><b>{{ x.rol or x.pos_nl }}</b>{% if x.rol_alt %} · ook als {{ x.rol_alt|map('lower')|join(', ') }}{% endif %}</span>
                 {% if x.land %}<span><b>{{ x.land }}</b></span>{% endif %}
                 {% if x.leeftijd %}<span><b>{{ x.leeftijd }}</b> jaar</span>{% endif %}
                 {% if x.lengte %}<span><b>{{ x.lengte }}</b> cm</span>{% endif %}
@@ -1526,6 +1537,15 @@
                 {% if x.contract %}<span>contract tot <b>{{ x.contract }}</b></span>{% endif %}
                 <span>{{ x.starts }}× basisspeler · {{ x.apps }} wedstrijden · {{ x.minuten }} min</span>
                 {% if x.blessure %}<span class="sp-blessure">✚ {{ x.blessure }}</span>{% endif %}
+                <form method="post" action="/speler-rol" class="sp-rolform">
+                  <input type="hidden" name="id" value="{{ x.id }}">
+                  <label>Positie aanpassen
+                    <select name="rol" onchange="this.form.submit()">
+                      <option value="auto">Automatisch</option>
+                      {% for code, label in rol_opties %}<option value="{{ code }}"{% if x.rol_handmatig and x.rol_code == code %} selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                  </label>
+                </form>
               </div>
 
               <div class="sp-boven">
@@ -1540,7 +1560,7 @@
                   </svg>
                   <figcaption>
                     <span><i style="background:var(--ant)"></i>{{ x.kort }}</span>
-                    {% if R.gem %}<span><i style="background:var(--teg)"></i>gemiddelde {{ x.pos_nl|lower }}</span>{% endif %}
+                    {% if R.gem %}<span><i style="background:var(--teg)"></i>gemiddelde {{ R.gem_label|lower }}</span>{% endif %}
                   </figcaption>
                 </figure>
                 {% endif %}
@@ -1555,32 +1575,71 @@
                 </div>
               </div>
 
-              {% if x.fm %}
-              <div class="sp-fm">
-                <h5>Vergelijking met de competitie · {{ x.fm.competitie }}</h5>
-                <p class="uitleg">Percentiel t.o.v. andere spelers in de competitie (FotMob, per 90 minuten waar dat kan):
-                  een volle balk betekent dat hij bij de besten hoort — groen = top-derde, rood = onderste derde.</p>
-                <div class="sp-secs">
-                  {% for s in x.fm.secties %}
-                  <div class="sp-sec"><h6>{{ s.titel }}</h6>
-                    {% for r in s.rijen %}
-                    <div class="sp-pct" title="{{ r.label }}{% if r.p90 is not none %} · {{ r.p90 }} per 90{% endif %}">
-                      <span>{{ r.label }}</span><b>{{ r.waarde }}</b>
-                      <span class="t">{% if r.pct is not none %}<i class="{{ 'hoog' if r.pct >= 67 else 'laag' if r.pct <= 33 }}" style="width:{{ r.pct }}%"></i>{% endif %}</span>
-                      <u>{{ r.pct if r.pct is not none else '' }}</u>
+              {% set vgl = x.vergelijk %}
+              {% if x.fm or vgl %}
+              <div class="sp-vgl" data-start="{{ x.pos if x.pos in ['F','M','D','G'] else 'A' }}">
+                <h5>Vergelijking met de competitie{% if x.fm %} · {{ x.fm.competitie }}{% endif %}</h5>
+                <div class="sp-vgl-knoppen">
+                  {% if x.fm %}<button type="button" data-vgl="fm" title="FotMob vergelijkt met spelers van de eigen positiegroep (niet te kiezen)">FotMob</button>{% endif %}
+                  {% if vgl %}
+                    {% if x.pos == 'G' %}
+                    <button type="button" data-vgl="G">t.o.v. keepers</button>
+                    {% else %}
+                    <button type="button" data-vgl="F">t.o.v. aanvallers</button>
+                    <button type="button" data-vgl="M">t.o.v. middenvelders</button>
+                    <button type="button" data-vgl="D">t.o.v. verdedigers</button>
+                    <button type="button" data-vgl="A">t.o.v. alle veldspelers</button>
+                    {% endif %}
+                  {% endif %}
+                </div>
+
+                {% if x.fm %}
+                <div class="sp-vgl-fm">
+                  <p class="uitleg">Percentiel t.o.v. andere spelers in de competitie (FotMob, per 90 minuten waar dat kan):
+                    een volle balk betekent dat hij bij de besten hoort — groen = top-derde, rood = onderste derde.</p>
+                  <div class="sp-secs">
+                    {% for s in x.fm.secties %}
+                    <div class="sp-sec"><h6>{{ s.titel }}</h6>
+                      {% for r in s.rijen %}
+                      <div class="sp-pct" title="{{ r.label }}{% if r.p90 is not none %} · {{ r.p90 }} per 90{% endif %}">
+                        <span>{{ r.label }}</span><b>{{ r.waarde }}</b>
+                        <span class="t">{% if r.pct is not none %}<i class="{{ 'hoog' if r.pct >= 67 else 'laag' if r.pct <= 33 }}" style="width:{{ r.pct }}%"></i>{% endif %}</span>
+                        <u>{{ r.pct if r.pct is not none else '' }}</u>
+                      </div>
+                      {% endfor %}
                     </div>
                     {% endfor %}
                   </div>
-                  {% endfor %}
                 </div>
+                {% endif %}
+
+                {% if vgl %}
+                <div class="sp-vgl-eigen" hidden data-n="{% for k, v in vgl.n.items() %}{{ k }}:{{ v }}{{ ',' if not loop.last }}{% endfor %}">
+                  <p class="uitleg">Zelf berekend uit de Sofascore-cijfers van de hele competitie: hoe hij scoort t.o.v.
+                    <b class="sp-vgl-n"></b> (minstens {{ vgl.min }} speelminuten). Waarden per 90 minuten, behalve de percentages.
+                    Volle balk = bij de besten; bij balverlies, overtredingen en goals tegen telt <em>weinig</em> als goed.</p>
+                  <div class="sp-secs">
+                    {% for sec in vgl.secties %}
+                    <div class="sp-sec"><h6>{{ sec.titel }}</h6>
+                      {% for r in sec.rijen %}
+                      <div class="sp-pct" title="{{ r.label }}" data-p="{% for k, v in r.p.items() %}{{ k }}:{{ v if v is not none else '' }}{{ ',' if not loop.last }}{% endfor %}">
+                        <span>{{ r.label }}</span><b>{{ r.waarde }}{% if r.eenheid == '%' %}%{% endif %}</b>
+                        <span class="t"><i></i></span><u></u>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endif %}
               </div>
               {% else %}
-              <p class="muted" style="font-size:12px;margin-top:12px">Geen FotMob-vergelijking beschikbaar (te weinig speelminuten of speler niet gevonden).</p>
+              <p class="muted" style="font-size:12px;margin-top:12px">Geen vergelijking met de competitie beschikbaar (te weinig speelminuten).</p>
               {% endif %}
             </div>
           </details>
           {% else %}
-          <div class="sp-speler sp-nog" data-pos="{{ x.pos }}" data-apps="0" data-naam="{{ x.naam }}">{{ sp_rij(x) }}</div>
+          <div class="sp-speler sp-nog" id="sp-{{ x.id }}" data-pos="{{ x.pos }}" data-apps="0" data-naam="{{ x.sorteer or x.naam }}">{{ sp_rij(x) }}</div>
           {% endif %}
         {% endfor %}
         </div>
@@ -1915,6 +1974,52 @@
     filtKn.forEach(b=>b.addEventListener('click',()=>{ filter=b.dataset.pos; bewaar('dvp-sp-filter',filter); pas(); }));
     sortSel.addEventListener('change',()=>{ bewaar('dvp-sp-sort',sortSel.value); pas(); });
     pas();
+
+    // vergelijking met de competitie: FotMob of zelf berekend t.o.v. een gekozen spelerstype
+    const NAMEN={F:'aanvallers',M:'middenvelders',D:'verdedigers',A:'alle veldspelers',G:'keepers'};
+    const kaarten=[...sp.querySelectorAll('.sp-vgl')];
+    let vgl=lees('dvp-sp-vgl','fm');
+    function pasVgl(){
+      kaarten.forEach(k=>{
+        const knoppen=[...k.querySelectorAll('.sp-vgl-knoppen button')];
+        const opties=knoppen.map(b=>b.dataset.vgl);
+        const sl=opties.includes(vgl) ? vgl : (opties.includes('fm') ? 'fm' : k.dataset.start);
+        knoppen.forEach(b=>b.classList.toggle('actief', b.dataset.vgl===sl));
+        const fm=k.querySelector('.sp-vgl-fm'), eigen=k.querySelector('.sp-vgl-eigen');
+        if(fm) fm.hidden = sl!=='fm';
+        if(!eigen) return;
+        eigen.hidden = sl==='fm';
+        if(sl==='fm') return;
+        const n=Object.fromEntries((eigen.dataset.n||'').split(',').map(x=>x.split(':')));
+        const tel=eigen.querySelector('.sp-vgl-n'); if(tel) tel.textContent=(n[sl]||'?')+' '+(NAMEN[sl]||'');
+        eigen.querySelectorAll('.sp-pct').forEach(r=>{
+          const p=Object.fromEntries((r.dataset.p||'').split(',').map(x=>x.split(':')));
+          const v=(p[sl]!==undefined && p[sl]!=='') ? parseInt(p[sl],10) : null;
+          const i=r.querySelector('.t i'), u=r.querySelector('u');
+          i.style.width = v===null ? '0' : v+'%';
+          i.className = v===null ? '' : (v>=67 ? 'hoog' : (v<=33 ? 'laag' : ''));
+          u.textContent = v===null ? '' : v;
+        });
+      });
+    }
+    sp.addEventListener('click',e=>{
+      const b=e.target.closest('.sp-vgl-knoppen button'); if(!b) return;
+      vgl=b.dataset.vgl; bewaar('dvp-sp-vgl',vgl); pasVgl();
+    });
+    pasVgl();
+
+    // na het wijzigen van een positie: terug naar die speler (kaart open)
+    if(location.hash.indexOf('#sp-')===0){
+      const d=document.getElementById(location.hash.slice(1));
+      if(d){
+        const tb=document.querySelector('.tabs button[data-tab="spelers"]'), sel=document.querySelector('.tab-select');
+        if(tb) tb.click(); else if(sel){ sel.value='spelers'; sel.dispatchEvent(new Event('change')); }
+        const l=d.closest('.sp-ploeg'); if(l){ team=l.dataset.team; bewaar('dvp-sp-team',team); }
+        pas(); if(d.hidden){ filter='alle'; bewaar('dvp-sp-filter',filter); pas(); }
+        if(d.tagName==='DETAILS') d.open=true;
+        d.scrollIntoView();
+      }
+    }
   })();
 
   // praatpunten: open/dicht onthouden (standaard dicht)

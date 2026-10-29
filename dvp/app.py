@@ -290,6 +290,7 @@ def _render_index(user_agent: str = "") -> bytes:
         "vastgeprikt": [p for p in lijst if p.get("vast")],
         "recent": [p for p in lijst if not p.get("vast")],
         "competities": competities.COMPETITIES,
+        "rol_opties": spelers.ROL_OPTIES,
         "competitie_naam": (actief.get("competitie") or {}).get("naam", ""),
         "versie": config.versie(),
         "blijf_draaien": bool(store.get_kv("settings:blijf_draaien", False)),
@@ -620,6 +621,14 @@ class Handler(BaseHTTPRequestHandler):
                     ploeg.prik(sid, actie == "vast")
                 terug = self.headers.get("Referer") or "/"
                 self._redirect("/instellingen" if "/instellingen" in terug else "/")
+            elif pad == "/speler-rol":
+                sid = (form.get("id") or [""])[0].strip()
+                rol = (form.get("rol") or ["auto"])[0].strip()
+                if sid.isdigit() and (rol == "auto" or rol in spelers.ROL_CODES):
+                    gekozen = store.get_kv("settings:speler_rollen", {}) or {}
+                    gekozen[sid] = rol
+                    store.set_kv("settings:speler_rollen", gekozen)
+                self._redirect(f"/#sp-{sid}" if sid.isdigit() else "/")
             elif pad == "/kies-match":
                 keuze = (form.get("event_id") or [""])[0].strip()
                 store.set_kv("settings:vorige_event", keuze if keuze and keuze != "auto" else None)
