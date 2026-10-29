@@ -20,7 +20,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from . import aggregate, assets, competities, config, export, mdrender, merk, ploeg, store
 from .names import _CLUB_STOPWOORDEN, kernwoord, normaliseer
-from .sources import fotmob, preview, sofascore, teamstats, transfermarkt
+from .sources import fotmob, preview, sofascore, spelers, teamstats, transfermarkt
 
 _TEMPLATES = Path(__file__).parent / "templates"
 _STATIC = Path(__file__).parent / "static"
@@ -137,6 +137,25 @@ def _do_teamstats(*, forceer: bool = False) -> None:
     _controleer(data)
 
 
+def _do_spelers(*, forceer: bool = False) -> None:
+    so = store.get_kv("bron:sofascore", {}) or {}
+    tegenstander = (so.get("volgende") or {}).get("tegenstander") or {}
+    bestaand = store.get_kv("bron:spelers", {}) or {}
+    if not forceer and bestaand:
+        vers = store.get_kv_updated("bron:spelers")
+        try:
+            oud_uur = (_dt.datetime.now() - _dt.datetime.fromisoformat(vers)).total_seconds() / 3600
+        except (TypeError, ValueError):
+            oud_uur = 999
+        zelfde = any(p.get("wie") == "tegenstander" and p.get("sofascore_id") == tegenstander.get("id")
+                     for p in (bestaand.get("ploegen") or []))
+        if oud_uur < 12 and zelfde:
+            return  # cache nog goed
+    data = spelers.fetch(so, ploeg.actieve())
+    store.set_kv("bron:spelers", data)
+    _controleer(data)
+
+
 # --- bron verversen --------------------------------------------------------
 _DOELEN = {
     "sofascore": _do_sofascore,
@@ -144,10 +163,11 @@ _DOELEN = {
     "transfermarkt": _do_transfermarkt,
     "voorbeschouwing": lambda: _do_voorbeschouwing(forceer=True),
     "teamstats": lambda: _do_teamstats(forceer=True),
+    "spelers": lambda: _do_spelers(forceer=True),
 }
 _STAP_LABEL = {"sofascore": "Sofascore", "transfermarkt": "Transfermarkt",
                "fotmob": "FotMob", "voorbeschouwing": "Voorbeschouwing",
-               "teamstats": "Teamstatistieken"}
+               "teamstats": "Teamstatistieken", "spelers": "Spelers"}
 
 
 def _foutmelding(naam: str, exc: Exception) -> dict:

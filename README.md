@@ -69,6 +69,23 @@ standings en ranking per ploeg uit **hun eigen competitie** (de tool toont een m
 dat de vergelijking dan niet 1-op-1 is). De doelpunt-types, timing en het veldje kloppen
 wel, want die worden per ploeg uit hun eigen competitiematchen opgebouwd.
 
+### Spelers
+Een lijst per ploeg (eigen ploeg en tegenstander), sorteerbaar en te filteren op positie.
+Elke speler klapt uit tot een profielkaart:
+
+- **Profiel** — land, leeftijd, lengte, voet, marktwaarde, contract en eventuele blessure.
+- **Radar** — Sofascore's vaardigheden (aanvallen, technisch, tactisch, verdedigen,
+  creativiteit; voor keepers reddingen, anticipatie, opbouw, lucht, tactisch) naast het
+  gemiddelde van zijn positie.
+- **Seizoenscijfers** per positie (xG, xA, sleutelpassen, duels, tackles, afstand, …),
+  met per-90-waarden — Sofascore.
+- **Vergelijking met de competitie** — FotMob-percentielen (hoe hoog scoort hij t.o.v. de
+  andere spelers in de competitie).
+
+Zit achter de aparte knop **spelers** (~1 min de eerste keer, daarna een halve dag gecacht).
+FotMob-spelers worden via de naam aan de Sofascore-selectie gekoppeld; wie te weinig
+minuten heeft voor FotMob-cijfers krijgt enkel de Sofascore-cijfers.
+
 ### Diagnose
 Spelers/clubs die de tool niet automatisch kon koppelen tussen de bronnen, plus een
 formulier om een **alias** toe te voegen (zodat het voortaan wél lukt).

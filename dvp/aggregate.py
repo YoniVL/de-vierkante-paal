@@ -350,7 +350,7 @@ def _bron_status() -> dict:
     fouten = store.get_kv("fouten", {}) or {}
     # teamstats en de voorbeschouwing verversen per speeldag, niet per uur
     grens = {"sofascore": 8, "transfermarkt": 8, "fotmob": 8,
-             "voorbeschouwing": 26, "teamstats": 26}
+             "voorbeschouwing": 26, "teamstats": 26, "spelers": 26}
     uit: dict[str, str] = {}
     for naam, uur in grens.items():
         if naam in fouten:
@@ -374,6 +374,7 @@ def bouw_overzicht() -> dict:
     fotmob = store.get_kv("bron:fotmob", {})
     voorbeschouwing_extra = store.get_kv("bron:voorbeschouwing", {})
     teamstats = store.get_kv("bron:teamstats", {})
+    spelers = store.get_kv("bron:spelers", {})
 
     event_id = (sofascore.get("vorige") or {}).get("event_id")
     scoretabel = bouw_scoretabel(sofascore, fotmob, event_id)
@@ -386,6 +387,7 @@ def bouw_overzicht() -> dict:
         "fotmob": fotmob,
         "voorbeschouwing_extra": voorbeschouwing_extra,
         "teamstats": teamstats,
+        "spelers": spelers,
         "event_id": event_id,
         "scoretabel": scoretabel,
         "stattabel": stattabel,
@@ -401,6 +403,7 @@ def bouw_overzicht() -> dict:
             "fotmob": store.get_kv_updated("bron:fotmob"),
             "voorbeschouwing": store.get_kv_updated("bron:voorbeschouwing"),
             "teamstats": store.get_kv_updated("bron:teamstats"),
+            "spelers": store.get_kv_updated("bron:spelers"),
         },
         "bron_status": _bron_status(),
     }

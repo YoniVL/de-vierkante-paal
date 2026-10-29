@@ -24,7 +24,7 @@ _ANTWERP: dict = {
 
 _CACHE_SLEUTELS = (
     "bron:sofascore", "bron:fotmob", "bron:transfermarkt", "bron:voorbeschouwing",
-    "bron:teamstats", "settings:vorige_event", "fouten",
+    "bron:teamstats", "bron:spelers", "settings:vorige_event", "fouten",
 )
 
 _MAX_RECENT = 8

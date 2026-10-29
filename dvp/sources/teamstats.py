@@ -469,6 +469,7 @@ def fetch(sofascore_blob: dict, ploeg: dict | None = None) -> dict:
             "rol": p["rol"],
             "naam": p["naam"],
             "sofascore_id": p["ss_id"],
+            "fotmob_id": p["fm_id"],
             "competitie": {"naam": pc["naam"], "ploegen": n_ploegen},
             "seizoen": seizoen_kaart,
             "thuisuit": thuisuit.get(p["ss_id"], {}),
